@@ -1,0 +1,63 @@
+name: Download Private Release
+description: Download official LTBase release assets from a private GitHub release
+
+inputs:
+  releases-repo:
+    description: Owner/repo holding private releases
+    required: true
+  release-id:
+    description: Release tag / release_id to download
+    required: true
+  token:
+    description: Fine-grained token that can read the private releases repo
+    required: true
+  output-root:
+    description: Local root directory for downloaded releases
+    required: false
+    default: .ltbase/releases
+
+outputs:
+  release-dir:
+    description: Downloaded release directory
+    value: ${{ steps.download.outputs.release_dir }}
+  manifest-path:
+    description: Downloaded manifest path
+    value: ${{ steps.download.outputs.manifest_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download assets
+      id: download
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        set -euo pipefail
+        release_dir="${{ inputs.output-root }}/${{ inputs.release-id }}"
+        rm -rf "${release_dir}"
+        mkdir -p "${release_dir}"
+        gh release download "${{ inputs.release-id }}" \
+          --repo "${{ inputs.releases-repo }}" \
+          --dir "${release_dir}" \
+          --clobber
+
+        manifest_path="${release_dir}/manifest.json"
+        test -f "${manifest_path}"
+        jq -e --arg release_id "${{ inputs.release-id }}" '.release_id == $release_id' "${manifest_path}" >/dev/null
+
+        mapfile -t files < <(jq -r '.artifacts[].file' "${manifest_path}")
+        for file in "${files[@]}"; do
+          test -f "${release_dir}/${file}"
+        done
+
+        while IFS=$'\t' read -r file sha; do
+          actual="$(shasum -a 256 "${release_dir}/${file}" | awk '{print $1}')"
+          if [[ "${actual}" != "${sha}" ]]; then
+            echo "checksum mismatch for ${file}" >&2
+            exit 1
+          fi
+        done < <(jq -r '.artifacts[] | [.file, .sha256] | @tsv' "${manifest_path}")
+
+        echo "release_dir=${release_dir}" >> "$GITHUB_OUTPUT"
+        echo "manifest_path=${manifest_path}" >> "$GITHUB_OUTPUT"

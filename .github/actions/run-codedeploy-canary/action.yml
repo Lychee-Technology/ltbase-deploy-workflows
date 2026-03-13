@@ -1,0 +1,78 @@
+name: Run CodeDeploy Canary
+description: Shift a Lambda alias to the target version using CodeDeploy
+
+inputs:
+  outputs-json:
+    description: Path to Pulumi outputs json
+    required: true
+  current-key:
+    description: JSON key for current alias version
+    required: true
+  target-key:
+    description: JSON key for target function version
+    required: true
+  function-key:
+    description: JSON key for function name
+    required: true
+  alias-key:
+    description: JSON key for alias name
+    required: true
+  app-key:
+    description: JSON key for CodeDeploy app name
+    required: true
+  group-key:
+    description: JSON key for CodeDeploy group name
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run canary deployment
+      shell: bash
+      run: |
+        set -euo pipefail
+        outputs_json="${{ inputs.outputs-json }}"
+        current="$(jq -r ".${{ inputs.current-key }}" "${outputs_json}")"
+        target="$(jq -r ".${{ inputs.target-key }}" "${outputs_json}")"
+        function_name="$(jq -r ".${{ inputs.function-key }}" "${outputs_json}")"
+        alias_name="$(jq -r ".${{ inputs.alias-key }}" "${outputs_json}")"
+        app_name="$(jq -r ".${{ inputs.app-key }}" "${outputs_json}")"
+        group_name="$(jq -r ".${{ inputs.group-key }}" "${outputs_json}")"
+
+        if [[ "${current}" == "${target}" ]]; then
+          echo "no deployment needed for ${function_name}"
+          exit 0
+        fi
+
+        appspec="$(jq -n \
+          --arg fn "${function_name}" \
+          --arg alias "${alias_name}" \
+          --arg current "${current}" \
+          --arg target "${target}" \
+          '{"version":"0.0","Resources":[{"Service":{"Type":"AWS::Lambda::Function","Properties":{"Name":$fn,"Alias":$alias,"CurrentVersion":$current,"TargetVersion":$target}}}]}' )"
+        sha="$(printf '%s' "${appspec}" | shasum -a 256 | awk '{print $1}')"
+        revision="$(jq -nc --arg content "${appspec}" --arg sha "${sha}" '{revisionType:"AppSpecContent",appSpecContent:{content:$content,sha256:$sha}}')"
+
+        deployment_id="$(aws deploy create-deployment \
+          --application-name "${app_name}" \
+          --deployment-group-name "${group_name}" \
+          --revision "${revision}" \
+          --query deploymentId \
+          --output text)"
+
+        while true; do
+          status="$(aws deploy get-deployment --deployment-id "${deployment_id}" --query 'deploymentInfo.status' --output text)"
+          case "${status}" in
+            Succeeded)
+              echo "deployment succeeded: ${deployment_id}"
+              exit 0
+              ;;
+            Failed|Stopped)
+              echo "deployment failed: ${deployment_id} (${status})" >&2
+              exit 1
+              ;;
+            *)
+              sleep 15
+              ;;
+          esac
+        done
