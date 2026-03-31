@@ -22,6 +22,7 @@ Reusable workflow inputs:
 - `aws_region`
 - `release_id`
 - `pulumi_backend_url`
+- `pulumi_secrets_provider`
 - `releases_repo`
 - `working_directory`
 
@@ -48,6 +49,7 @@ jobs:
       aws_region: ap-northeast-1
       release_id: v1.0.0
       pulumi_backend_url: ${{ vars.PULUMI_BACKEND_URL }}
+      pulumi_secrets_provider: ${{ vars.PULUMI_SECRETS_PROVIDER_DEVO }}
       releases_repo: Lychee-Technology/ltbase-releases
       working_directory: infra
     secrets:

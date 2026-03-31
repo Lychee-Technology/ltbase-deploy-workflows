@@ -16,6 +16,9 @@ inputs:
   pulumi-stack:
     description: Stack name
     required: true
+  pulumi-secrets-provider:
+    description: Pulumi secrets provider URL
+    required: true
   working-directory:
     description: Pulumi project directory
     required: false
@@ -35,8 +38,9 @@ runs:
     - name: Pulumi login
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: pulumi login "${{ inputs.pulumi-backend-url }}"
-    - name: Select stack
-      shell: bash
-      working-directory: ${{ inputs.working-directory }}
-      run: pulumi stack select "${{ inputs.pulumi-stack }}" --create
+      run: |
+        "${{ github.action_path }}/setup.sh" \
+          --pulumi-backend-url "${{ inputs.pulumi-backend-url }}" \
+          --pulumi-stack "${{ inputs.pulumi-stack }}" \
+          --pulumi-secrets-provider "${{ inputs.pulumi-secrets-provider }}" \
+          --working-directory "${{ inputs.working-directory }}"
