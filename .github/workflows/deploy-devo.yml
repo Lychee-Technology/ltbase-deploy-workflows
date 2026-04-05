@@ -31,6 +31,15 @@ on:
         type: string
         required: false
         default: infra
+      reconcile_managed_dsql_endpoint:
+        type: boolean
+        required: false
+        default: false
+        description: >
+          When true, reads dsqlClusterIdentifier from the stack output,
+          calls aws dsql get-cluster to fetch the authoritative endpoint,
+          and writes it back as pulumi config dsqlEndpoint before the
+          deployment outputs step.
     secrets:
       aws_role_arn:
         required: true
@@ -66,6 +75,7 @@ jobs:
       working_directory: ${{ inputs.working_directory }}
       run_canary: false
       refresh_after_apply: false
+      reconcile_managed_dsql_endpoint: ${{ inputs.reconcile_managed_dsql_endpoint }}
     secrets:
       aws_role_arn: ${{ secrets.aws_role_arn }}
       ltbase_releases_token: ${{ secrets.ltbase_releases_token }}

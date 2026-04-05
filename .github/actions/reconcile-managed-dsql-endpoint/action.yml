@@ -1,0 +1,60 @@
+name: Reconcile Managed DSQL Endpoint
+description: >
+  Reads the deployed dsqlClusterIdentifier stack output, calls aws dsql get-cluster
+  to fetch the authoritative endpoint, and writes it back as pulumi config dsqlEndpoint.
+  Must be run after pulumi up and before the second apply or any CodeDeploy canary.
+
+inputs:
+  stack:
+    description: Pulumi stack name
+    required: true
+  aws-region:
+    description: AWS region where the DSQL cluster lives
+    required: true
+  working-directory:
+    description: Pulumi project directory (blueprint-relative)
+    required: false
+    default: infra
+
+runs:
+  using: composite
+  steps:
+    - name: Reconcile DSQL endpoint
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+
+        resolve_dsql_cluster_identifier() {
+          pulumi stack output dsqlClusterIdentifier --stack "${{ inputs.stack }}" 2>/dev/null
+        }
+
+        clear_managed_dsql_endpoint() {
+          pulumi config rm dsqlEndpoint --stack "${{ inputs.stack }}" >/dev/null 2>&1 || true
+        }
+
+        dsql_cluster_identifier="$(resolve_dsql_cluster_identifier || true)"
+        if [[ -z "${dsql_cluster_identifier}" ]]; then
+          clear_managed_dsql_endpoint
+          echo "failed to resolve dsqlClusterIdentifier for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        if ! dsql_endpoint="$(aws dsql get-cluster \
+            --identifier "${dsql_cluster_identifier}" \
+            --region "${{ inputs.aws-region }}" \
+            --query endpoint \
+            --output text)"; then
+          clear_managed_dsql_endpoint
+          echo "failed to resolve managed DSQL endpoint for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        if [[ -z "${dsql_endpoint}" || "${dsql_endpoint}" == "None" || "${dsql_endpoint}" == "null" ]]; then
+          clear_managed_dsql_endpoint
+          echo "managed DSQL endpoint was empty for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        pulumi config set dsqlEndpoint "${dsql_endpoint}" --stack "${{ inputs.stack }}"
+        echo "dsqlEndpoint set to ${dsql_endpoint} for stack ${{ inputs.stack }}"
