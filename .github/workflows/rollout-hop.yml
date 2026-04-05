@@ -37,6 +37,15 @@ on:
         type: boolean
         required: false
         default: false
+      reconcile_managed_dsql_endpoint:
+        type: boolean
+        required: false
+        default: false
+        description: >
+          When true, reads dsqlClusterIdentifier from the stack output,
+          calls aws dsql get-cluster to fetch the authoritative endpoint,
+          and writes it back as pulumi config dsqlEndpoint before output
+          capture and any CodeDeploy canary steps.
     secrets:
       aws_role_arn:
         required: true
@@ -108,6 +117,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
         working-directory: blueprint/${{ inputs.working_directory }}
         run: pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive
+      - name: Reconcile managed DSQL endpoint
+        if: ${{ inputs.reconcile_managed_dsql_endpoint }}
+        uses: ./.ltbase/workflow-repo/.github/actions/reconcile-managed-dsql-endpoint
+        with:
+          stack: ${{ inputs.pulumi_stack }}
+          aws-region: ${{ inputs.aws_region }}
+          working-directory: blueprint/${{ inputs.working_directory }}
       - name: Capture deployment outputs
         working-directory: blueprint/${{ inputs.working_directory }}
         run: pulumi stack output --json --stack "${{ inputs.pulumi_stack }}" > /tmp/deployment-outputs.json
