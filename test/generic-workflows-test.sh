@@ -26,14 +26,14 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "workflow
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "repository: Lychee-Technology/ltbase-deploy-workflows"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go-version-file: \${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
-assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "pulumi config set releaseAssetDir \"../.ltbase/releases\" --stack \"\${{ inputs.pulumi_stack }}\""
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "workflow_actions_ref"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "repository: Lychee-Technology/ltbase-deploy-workflows"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go-version-file: \${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "pulumi config set releaseAssetDir \"../.ltbase/releases\" --stack \"\${{ inputs.pulumi_stack }}\""
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" ".github/workflows/preview-stack.yml@"

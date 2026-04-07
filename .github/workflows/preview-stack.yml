@@ -99,7 +99,7 @@ jobs:
       - name: Set release id
         working-directory: blueprint/${{ inputs.working_directory }}
         run: |
-          pulumi config set releaseAssetDir "../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"
+          pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"
           pulumi config set releaseId "${{ inputs.release_id }}" --stack "${{ inputs.pulumi_stack }}"
       - name: Preview
         env:
