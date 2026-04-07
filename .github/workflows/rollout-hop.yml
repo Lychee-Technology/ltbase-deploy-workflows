@@ -29,6 +29,10 @@ on:
         type: string
         required: false
         default: infra
+      workflow_actions_ref:
+        type: string
+        required: false
+        default: main
       run_canary:
         type: boolean
         required: false
@@ -80,15 +84,14 @@ jobs:
         run: |
           echo "release_id=${{ inputs.release_id }}" >> "$GITHUB_OUTPUT"
           echo "pulumi_stack=${{ inputs.pulumi_stack }}" >> "$GITHUB_OUTPUT"
-          echo "workflow_repo=${{ github.repository }}" >> "$GITHUB_OUTPUT"
-          echo "workflow_ref_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          echo "workflow_ref_name=${{ inputs.workflow_actions_ref }}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
         with:
           path: blueprint
           ref: ${{ inputs.blueprint_ref || github.sha }}
       - uses: actions/checkout@v6
         with:
-          repository: ${{ steps.meta.outputs.workflow_repo }}
+          repository: Lychee-Technology/ltbase-deploy-workflows
           ref: ${{ steps.meta.outputs.workflow_ref_name }}
           path: .ltbase/workflow-repo
       - uses: aws-actions/configure-aws-credentials@v5

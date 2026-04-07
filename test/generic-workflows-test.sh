@@ -22,8 +22,12 @@ assert_file_contains() {
 
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "name: Preview Stack"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "pulumi_secrets_provider"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "workflow_actions_ref"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "repository: Lychee-Technology/ltbase-deploy-workflows"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "workflow_actions_ref"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "repository: Lychee-Technology/ltbase-deploy-workflows"
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" ".github/workflows/preview-stack.yml@"
