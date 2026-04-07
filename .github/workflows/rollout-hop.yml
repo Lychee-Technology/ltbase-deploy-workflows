@@ -107,6 +107,8 @@ jobs:
           output-root: blueprint/.ltbase/releases
       - uses: ./.ltbase/workflow-repo/.github/actions/setup-pulumi
         with:
+          go-version-file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
+          cache-dependency-path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
           pulumi-backend-url: ${{ inputs.pulumi_backend_url }}
           pulumi-stack: ${{ inputs.pulumi_stack }}
           pulumi-secrets-provider: ${{ inputs.pulumi_secrets_provider }}
