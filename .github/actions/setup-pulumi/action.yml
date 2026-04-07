@@ -33,8 +33,6 @@ runs:
         cache: true
         cache-dependency-path: ${{ inputs.cache-dependency-path }}
     - uses: pulumi/actions@v6
-      with:
-        command: version
     - name: Pulumi login
       shell: bash
       working-directory: ${{ inputs.working-directory }}
