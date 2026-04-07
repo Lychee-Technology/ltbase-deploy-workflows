@@ -78,11 +78,10 @@ jobs:
     steps:
       - id: meta
         run: |
-          workflow_ref='${{ github.workflow_ref }}'
           echo "release_id=${{ inputs.release_id }}" >> "$GITHUB_OUTPUT"
           echo "pulumi_stack=${{ inputs.pulumi_stack }}" >> "$GITHUB_OUTPUT"
-          echo "workflow_repo=${workflow_ref%%/.github/workflows/*}" >> "$GITHUB_OUTPUT"
-          echo "workflow_ref_name=${workflow_ref##*@}" >> "$GITHUB_OUTPUT"
+          echo "workflow_repo=${{ github.repository }}" >> "$GITHUB_OUTPUT"
+          echo "workflow_ref_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
         with:
           path: blueprint
