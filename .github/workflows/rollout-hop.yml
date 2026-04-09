@@ -118,6 +118,13 @@ jobs:
         run: |
           pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"
           pulumi config set releaseId "${{ inputs.release_id }}" --stack "${{ inputs.pulumi_stack }}"
+      - name: Show Pulumi build environment
+        working-directory: blueprint/${{ inputs.working_directory }}
+        run: |
+          date -u
+          go version
+          pulumi version
+          go env GOMOD GOCACHE GOMODCACHE
       - name: Deploy stack
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}

@@ -27,6 +27,8 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "reposito
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go-version-file: \${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "name: Show Pulumi build environment"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go env GOMOD GOCACHE GOMODCACHE"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" 'pulumi preview --stack "${{ inputs.pulumi_stack }}" --non-interactive --logtostderr --logflow -v=6'
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
@@ -35,6 +37,8 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "repository
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go-version-file: \${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Show Pulumi build environment"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go env GOMOD GOCACHE GOMODCACHE"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 'pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive --logtostderr --logflow -v=6'
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
