@@ -73,7 +73,7 @@ permissions:
 
 jobs:
   rollout:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     outputs:
       release_id: ${{ steps.meta.outputs.release_id }}
       manifest_path: ${{ steps.download.outputs.manifest_path }}
