@@ -122,7 +122,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
         working-directory: blueprint/${{ inputs.working_directory }}
-        run: pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive
+        run: pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive --logtostderr --logflow -v=6
       - name: Reconcile managed DSQL endpoint
         if: ${{ inputs.reconcile_managed_dsql_endpoint }}
         uses: ./.ltbase/workflow-repo/.github/actions/reconcile-managed-dsql-endpoint
