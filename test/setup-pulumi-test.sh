@@ -107,6 +107,7 @@ fi
 
 assert_file_contains "${temp_dir}/mismatch.out" "secrets provider mismatch"
 assert_file_contains "${ACTION_PATH}" "pulumi-secrets-provider"
+assert_file_contains "${ACTION_PATH}" "pulumi-version: 3.224.0"
 assert_file_not_contains "${ACTION_PATH}" "command: version"
 assert_file_not_contains "${ACTION_PATH}" 'working-directory: ${{ inputs.working-directory }}'
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" "pulumi_secrets_provider"
