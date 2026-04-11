@@ -29,8 +29,10 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go-versi
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "name: Show Pulumi build environment"
-assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go env GOMOD GOCACHE GOMODCACHE"
-assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" 'pulumi preview --stack "${{ inputs.pulumi_stack }}" --non-interactive --logtostderr --logflow -v=6'
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "uname -a"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "go env GOMOD GOCACHE GOMODCACHE GOARCH GOOS"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" ".github/actions/run-pulumi"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "command: preview"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "workflow_actions_ref"
@@ -40,8 +42,15 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go-version
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cache-dependency-path: \${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 'pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"'
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Show Pulumi build environment"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go env GOMOD GOCACHE GOMODCACHE"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 'pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive --logtostderr --logflow -v=6'
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "uname -a"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "go env GOMOD GOCACHE GOMODCACHE GOARCH GOOS"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/run-pulumi"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: up"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: refresh"
+assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "strategy:"
+assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04-arm"
+assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04"
+assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "command: preview"
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" ".github/workflows/preview-stack.yml@"

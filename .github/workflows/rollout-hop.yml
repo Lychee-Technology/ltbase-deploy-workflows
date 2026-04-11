@@ -122,14 +122,23 @@ jobs:
         working-directory: blueprint/${{ inputs.working_directory }}
         run: |
           date -u
+          uname -a
           go version
           pulumi version
-          go env GOMOD GOCACHE GOMODCACHE
+          go env GOMOD GOCACHE GOMODCACHE GOARCH GOOS
       - name: Deploy stack
+        uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
-        working-directory: blueprint/${{ inputs.working_directory }}
-        run: pulumi up --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive --logtostderr --logflow -v=6
+          GOMAXPROCS: "2"
+          GOMEMLIMIT: 3GiB
+          GOGC: "50"
+        with:
+          working-directory: blueprint/${{ inputs.working_directory }}
+          command: up
+          stack: ${{ inputs.pulumi_stack }}
+          prefer-wrapper: true
+          wrapper-path: scripts/pulumi-wrapper.sh
       - name: Reconcile managed DSQL endpoint
         if: ${{ inputs.reconcile_managed_dsql_endpoint }}
         uses: ./.ltbase/workflow-repo/.github/actions/reconcile-managed-dsql-endpoint
@@ -175,10 +184,18 @@ jobs:
           group-key: authServiceDeploymentGroupName
       - name: Refresh stack
         if: ${{ inputs.refresh_after_apply }}
+        uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
-        working-directory: blueprint/${{ inputs.working_directory }}
-        run: pulumi refresh --stack "${{ inputs.pulumi_stack }}" --yes --non-interactive
+          GOMAXPROCS: "2"
+          GOMEMLIMIT: 3GiB
+          GOGC: "50"
+        with:
+          working-directory: blueprint/${{ inputs.working_directory }}
+          command: refresh
+          stack: ${{ inputs.pulumi_stack }}
+          prefer-wrapper: true
+          wrapper-path: scripts/pulumi-wrapper.sh
       - id: outputs
         run: |
           echo "deployment_outputs_json=$(jq -c '.' /tmp/deployment-outputs.json)" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,86 @@
+name: Diagnose Go Compile
+
+on:
+  workflow_dispatch:
+    inputs:
+      blueprint_ref:
+        description: Blueprint ref to compile
+        required: true
+        type: string
+      pulumi_stack:
+        description: Stack to use for preview
+        required: true
+        type: string
+      aws_region:
+        description: AWS region for credentials setup
+        required: true
+        type: string
+      pulumi_backend_url:
+        description: Pulumi backend URL
+        required: true
+        type: string
+      pulumi_secrets_provider:
+        description: Pulumi secrets provider
+        required: true
+        type: string
+      working_directory:
+        description: Blueprint working directory
+        required: false
+        default: infra
+        type: string
+      release_id:
+        description: Release id to use during preview
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  diagnose:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04-arm, ubuntu-24.04]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          path: workflow-repo
+      - name: Check out blueprint
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ inputs.blueprint_ref }}
+          path: blueprint
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws_region }}
+      - uses: ./workflow-repo/.github/actions/setup-pulumi
+        with:
+          go-version-file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
+          cache-dependency-path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
+          pulumi-backend-url: ${{ inputs.pulumi_backend_url }}
+          pulumi-stack: ${{ inputs.pulumi_stack }}
+          pulumi-secrets-provider: ${{ inputs.pulumi_secrets_provider }}
+          working-directory: blueprint/${{ inputs.working_directory }}
+      - name: Set release id
+        working-directory: blueprint/${{ inputs.working_directory }}
+        run: |
+          pulumi config set releaseAssetDir "$(pwd)/../.ltbase/releases" --stack "${{ inputs.pulumi_stack }}"
+          pulumi config set releaseId "${{ inputs.release_id }}" --stack "${{ inputs.pulumi_stack }}"
+      - name: Preview via hardened path
+        uses: ./workflow-repo/.github/actions/run-pulumi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GOMAXPROCS: "2"
+          GOMEMLIMIT: 3GiB
+          GOGC: "50"
+        with:
+          working-directory: blueprint/${{ inputs.working_directory }}
+          command: preview
+          stack: ${{ inputs.pulumi_stack }}
+          prefer-wrapper: true
+          wrapper-path: scripts/pulumi-wrapper.sh
