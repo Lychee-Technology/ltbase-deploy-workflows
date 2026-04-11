@@ -105,14 +105,23 @@ jobs:
         working-directory: blueprint/${{ inputs.working_directory }}
         run: |
           date -u
+          uname -a
           go version
           pulumi version
-          go env GOMOD GOCACHE GOMODCACHE
+          go env GOMOD GOCACHE GOMODCACHE GOARCH GOOS
       - name: Preview
+        uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
-        working-directory: blueprint/${{ inputs.working_directory }}
-        run: pulumi preview --stack "${{ inputs.pulumi_stack }}" --non-interactive --logtostderr --logflow -v=6
+          GOMAXPROCS: "2"
+          GOMEMLIMIT: 3GiB
+          GOGC: "50"
+        with:
+          working-directory: blueprint/${{ inputs.working_directory }}
+          command: preview
+          stack: ${{ inputs.pulumi_stack }}
+          prefer-wrapper: true
+          wrapper-path: scripts/pulumi-wrapper.sh
       - id: outputs
         run: |
           printf 'deployment_outputs_json=%s\n' '{}' >> "$GITHUB_OUTPUT"

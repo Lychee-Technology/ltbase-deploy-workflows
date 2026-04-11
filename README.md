@@ -16,6 +16,18 @@ Public reusable GitHub Actions workflows for the LTBase private deployment chann
 - scripts:
   - `scripts/reconcile-managed-dsql-endpoint.sh` — local/manual equivalent of the action
 
+## Pulumi Execution Hardening
+
+Reusable workflows now route `pulumi preview`, `pulumi up`, and `pulumi refresh` through the internal `.github/actions/run-pulumi` action.
+
+The action:
+
+- prefers `scripts/pulumi-wrapper.sh` in the blueprint repo when that file exists and is executable
+- falls back to the direct `pulumi` CLI when no wrapper is present
+- standardizes verbose logging and Go memory tuning in one place
+
+This keeps workflow callers stable while allowing blueprint repos to ship lighter compile paths for Pulumi programs that would otherwise OOM.
+
 ## Stable Interface
 
 Reusable workflow inputs:
@@ -62,4 +74,3 @@ jobs:
       ltbase_releases_token: ${{ secrets.LTBASE_RELEASES_TOKEN }}
       cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 ```
-
