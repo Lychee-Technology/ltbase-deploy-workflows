@@ -3,6 +3,10 @@ name: Diagnose Go Compile
 on:
   workflow_dispatch:
     inputs:
+      blueprint_repository:
+        description: Blueprint repository to diagnose
+        required: true
+        type: string
       blueprint_ref:
         description: Blueprint ref to compile
         required: true
@@ -33,6 +37,14 @@ on:
         required: true
         type: string
 
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+      LTBASE_RELEASES_TOKEN:
+        required: true
+      CLOUDFLARE_API_TOKEN:
+        required: true
+
 permissions:
   contents: read
   id-token: write
@@ -51,13 +63,20 @@ jobs:
       - name: Check out blueprint
         uses: actions/checkout@v6
         with:
-          repository: ${{ github.repository }}
+          repository: ${{ inputs.blueprint_repository }}
           ref: ${{ inputs.blueprint_ref }}
           path: blueprint
       - uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ inputs.aws_region }}
+      - id: download
+        uses: ./workflow-repo/.github/actions/download-private-release
+        with:
+          releases-repo: Lychee-Technology/ltbase-releases
+          release-id: ${{ inputs.release_id }}
+          token: ${{ secrets.LTBASE_RELEASES_TOKEN }}
+          output-root: blueprint/.ltbase/releases
       - uses: ./workflow-repo/.github/actions/setup-pulumi
         with:
           go-version-file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
