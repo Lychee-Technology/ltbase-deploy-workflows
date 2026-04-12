@@ -2,6 +2,8 @@
 
 Public reusable GitHub Actions workflows for the LTBase private deployment channel.
 
+Blueprint repositories can optionally publish a commit-bound prebuilt `ltbase-infra` binary as a GitHub Actions artifact named `infra-binary-linux-arm64-<commit_sha>`. When present, the reusable workflows install that binary before running Pulumi. When absent or invalid, they fall back to the blueprint repo's normal source-build wrapper path.
+
 ## Contents
 
 - reusable workflows:
@@ -22,11 +24,12 @@ Reusable workflows now route `pulumi preview`, `pulumi up`, and `pulumi refresh`
 
 The action:
 
-- prefers `scripts/pulumi-wrapper.sh` in the blueprint repo when that file exists and is executable
+- installs a prebuilt `ltbase-infra` binary from the blueprint repo when an exact commit match is available
+- prefers `infra/scripts/pulumi-wrapper.sh` in the blueprint repo when that file exists and is executable
 - falls back to the direct `pulumi` CLI when no wrapper is present
 - standardizes verbose logging and Go memory tuning in one place
 
-This keeps workflow callers stable while allowing blueprint repos to ship lighter compile paths for Pulumi programs that would otherwise OOM.
+This keeps workflow callers stable while allowing blueprint repos to avoid repeated Go compilation for Pulumi programs that would otherwise OOM.
 
 ## Stable Interface
 

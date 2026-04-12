@@ -68,6 +68,7 @@ on:
         value: ${{ jobs.rollout.outputs.deployment_outputs_json }}
 
 permissions:
+  actions: read
   contents: read
   id-token: write
 
@@ -94,6 +95,14 @@ jobs:
           repository: Lychee-Technology/ltbase-deploy-workflows
           ref: ${{ steps.meta.outputs.workflow_ref_name }}
           path: .ltbase/workflow-repo
+      - name: Install prebuilt infra binary
+        id: prebuilt
+        uses: ./.ltbase/workflow-repo/.github/actions/install-prebuilt-infra-binary
+        with:
+          repository: ${{ github.repository }}
+          commit: ${{ github.sha }}
+          working-directory: blueprint/${{ inputs.working_directory }}
+          token: ${{ github.token }}
       - uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.aws_role_arn }}

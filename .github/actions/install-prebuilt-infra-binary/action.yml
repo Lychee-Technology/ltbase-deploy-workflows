@@ -1,0 +1,34 @@
+name: Install Prebuilt Infra Binary
+description: Install a commit-bound prebuilt Pulumi infra binary from the blueprint repository when available
+
+inputs:
+  repository:
+    description: Blueprint repository that owns the artifact
+    required: true
+  commit:
+    description: Exact blueprint commit to match
+    required: true
+  working-directory:
+    description: Pulumi project directory under the checked-out blueprint
+    required: true
+  token:
+    description: GitHub token with actions read access to the blueprint repository
+    required: true
+
+outputs:
+  installed:
+    description: Whether a matching prebuilt binary was installed
+    value: ${{ steps.install.outputs.installed }}
+
+runs:
+  using: composite
+  steps:
+    - id: install
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        "${{ github.action_path }}/install.sh" \
+          --repository "${{ inputs.repository }}" \
+          --commit "${{ inputs.commit }}" \
+          --working-directory "${{ inputs.working-directory }}"
