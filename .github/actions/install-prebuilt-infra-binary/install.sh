@@ -3,6 +3,7 @@
 set -euo pipefail
 
 REPOSITORY=""
+BINARIES_REPO=""
 COMMIT=""
 WORKING_DIRECTORY=""
 
@@ -10,6 +11,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --repository)
       REPOSITORY="$2"
+      shift 2
+      ;;
+    --binaries-repo)
+      BINARIES_REPO="$2"
       shift 2
       ;;
     --commit)
@@ -27,48 +32,91 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for name in REPOSITORY COMMIT WORKING_DIRECTORY GH_TOKEN GITHUB_OUTPUT; do
+for name in REPOSITORY BINARIES_REPO COMMIT WORKING_DIRECTORY GH_TOKEN GITHUB_OUTPUT; do
   if [[ -z "${!name:-}" ]]; then
     echo "${name} is required" >&2
     exit 1
   fi
 done
 
-artifact_name="infra-binary-linux-arm64-${COMMIT}"
-printf 'Looking for prebuilt infra binary artifact %s in %s\n' "${artifact_name}" "${REPOSITORY}"
+case "$(uname -m)" in
+  x86_64|amd64)
+    TARGET_ARCH="linux-amd64"
+    ;;
+  arm64|aarch64)
+    TARGET_ARCH="linux-arm64"
+    ;;
+  *)
+    printf 'Unsupported runner architecture; falling back to source build\n'
+    printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
+    exit 0
+    ;;
+esac
 
-artifact_json="$(gh api "repos/${REPOSITORY}/actions/artifacts?name=${artifact_name}")"
-download_url="$(printf '%s' "${artifact_json}" | jq -r '.artifacts[0].archive_download_url // empty')"
+printf 'Looking for prebuilt infra binary releases in %s for %s@%s (%s)\n' "${BINARIES_REPO}" "${REPOSITORY}" "${COMMIT}" "${TARGET_ARCH}"
 
-if [[ -z "${download_url}" ]]; then
+release_json="$(gh api "repos/${BINARIES_REPO}/releases?per_page=20")"
+
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "${tmp_dir}"' EXIT
+
+matching_asset=""
+matching_sha=""
+matching_manifest=""
+matching_url=""
+release_count="$(printf '%s' "${release_json}" | jq 'length')"
+
+for ((idx=0; idx<release_count; idx++)); do
+  manifest_url="$(printf '%s' "${release_json}" | jq -r ".[$idx].assets[]? | select(.name == \"manifest.json\") | .browser_download_url" | head -n 1)"
+  if [[ -z "${manifest_url}" ]]; then
+    continue
+  fi
+
+  curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" "${manifest_url}" -o "${tmp_dir}/manifest-${idx}.json"
+
+  manifest_repo="$(jq -r '.source_repository // empty' "${tmp_dir}/manifest-${idx}.json")"
+  manifest_commit="$(jq -r '.source_commit // empty' "${tmp_dir}/manifest-${idx}.json")"
+  if [[ "${manifest_repo}" != "${REPOSITORY}" || "${manifest_commit}" != "${COMMIT}" ]]; then
+    continue
+  fi
+
+  matching_asset="$(jq -r --arg arch "${TARGET_ARCH}" '.artifacts[]? | select(.arch == $arch) | .file' "${tmp_dir}/manifest-${idx}.json" | head -n 1)"
+  matching_sha="$(jq -r --arg arch "${TARGET_ARCH}" '.artifacts[]? | select(.arch == $arch) | .sha256' "${tmp_dir}/manifest-${idx}.json" | head -n 1)"
+  if [[ -z "${matching_asset}" || -z "${matching_sha}" ]]; then
+    continue
+  fi
+
+  matching_url="$(printf '%s' "${release_json}" | jq -r --arg asset "${matching_asset}" ".[$idx].assets[]? | select(.name == \$asset) | .browser_download_url" | head -n 1)"
+  if [[ -z "${matching_url}" ]]; then
+    continue
+  fi
+
+  matching_manifest="${tmp_dir}/manifest-${idx}.json"
+  break
+done
+
+if [[ -z "${matching_url}" || -z "${matching_manifest}" ]]; then
   printf 'No matching prebuilt infra binary found; falling back to source build\n'
   printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
   exit 0
 fi
 
-tmp_dir="$(mktemp -d)"
-trap 'rm -rf "${tmp_dir}"' EXIT
+curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" "${matching_url}" -o "${tmp_dir}/binary.tar.gz"
+binary_sha="$(shasum -a 256 "${tmp_dir}/binary.tar.gz" | awk '{print $1}')"
 
-curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" "${download_url}" -o "${tmp_dir}/artifact.zip"
-unzip -q "${tmp_dir}/artifact.zip" -d "${tmp_dir}/artifact"
-
-manifest_path="$(find "${tmp_dir}/artifact" -type f -name manifest.json | head -n 1)"
-binary_path="$(find "${tmp_dir}/artifact" -type f -name ltbase-infra | head -n 1)"
-
-if [[ ! -f "${manifest_path}" || ! -f "${binary_path}" ]]; then
-  printf 'Artifact missing expected files; falling back to source build\n'
+if [[ "${matching_sha}" != "${binary_sha}" ]]; then
+  printf 'Artifact validation failed; falling back to source build\n'
   printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
   exit 0
 fi
 
-manifest_commit="$(jq -r '.source_commit // empty' "${manifest_path}")"
-manifest_os="$(jq -r '.os // empty' "${manifest_path}")"
-manifest_arch="$(jq -r '.arch // empty' "${manifest_path}")"
-manifest_sha="$(jq -r '.sha256 // empty' "${manifest_path}")"
-binary_sha="$(shasum -a 256 "${binary_path}" | awk '{print $1}')"
+mkdir -p "${tmp_dir}/artifact"
+tar -xzf "${tmp_dir}/binary.tar.gz" -C "${tmp_dir}/artifact"
 
-if [[ "${manifest_commit}" != "${COMMIT}" || "${manifest_os}" != "linux" || "${manifest_arch}" != "arm64" || "${manifest_sha}" != "${binary_sha}" ]]; then
-  printf 'Artifact validation failed; falling back to source build\n'
+binary_path="$(find "${tmp_dir}/artifact" -type f -name ltbase-infra | head -n 1)"
+
+if [[ ! -f "${binary_path}" ]]; then
+  printf 'Artifact missing expected files; falling back to source build\n'
   printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
   exit 0
 fi

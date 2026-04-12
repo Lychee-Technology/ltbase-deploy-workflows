@@ -31,6 +31,7 @@ assert_log_contains() {
 }
 
 assert_file_contains "${ACTION_PATH}" "repository"
+assert_file_contains "${ACTION_PATH}" "binaries-repo"
 assert_file_contains "${ACTION_PATH}" "commit"
 assert_file_contains "${ACTION_PATH}" "working-directory"
 assert_file_contains "${ACTION_PATH}" "token"
@@ -39,26 +40,26 @@ temp_dir="$(mktemp -d)"
 trap 'rm -rf "${temp_dir}"' EXIT
 fake_bin="${temp_dir}/bin"
 log_file="${temp_dir}/commands.log"
-mkdir -p "${fake_bin}" "${temp_dir}/artifact/infra/.pulumi/bin" "${temp_dir}/blueprint/infra"
+mkdir -p "${fake_bin}" "${temp_dir}/release-assets" "${temp_dir}/blueprint/infra"
 touch "${log_file}"
 
-printf '#!/usr/bin/env bash\nexit 0\n' >"${temp_dir}/artifact/infra/.pulumi/bin/ltbase-infra"
-chmod +x "${temp_dir}/artifact/infra/.pulumi/bin/ltbase-infra"
-sha256="$(shasum -a 256 "${temp_dir}/artifact/infra/.pulumi/bin/ltbase-infra" | awk '{print $1}')"
-cat >"${temp_dir}/artifact/infra/manifest.json" <<EOF
-{"source_repository":"example/repo","source_commit":"abc123","source_ref":"main","project":"ltbase-infra","binary_name":"ltbase-infra","os":"linux","arch":"arm64","sha256":"${sha256}","go_version":"go1.26.0","built_at":"2026-04-11T00:00:00Z"}
+mkdir -p "${temp_dir}/tarball-amd64"
+printf '#!/usr/bin/env bash\nexit 0\n' >"${temp_dir}/tarball-amd64/ltbase-infra"
+chmod +x "${temp_dir}/tarball-amd64/ltbase-infra"
+(cd "${temp_dir}/tarball-amd64" && tar -czf "${temp_dir}/release-assets/ltbase-blueprint-binaries-linux-amd64.tar.gz" ltbase-infra)
+amd64_sha="$(shasum -a 256 "${temp_dir}/release-assets/ltbase-blueprint-binaries-linux-amd64.tar.gz" | awk '{print $1}')"
+cat >"${temp_dir}/release-assets/manifest.json" <<EOF
+{"source_repository":"example/repo","source_commit":"abc123","source_ref":"main","release_tag":"r20260411T000000Z","artifacts":[{"file":"ltbase-blueprint-binaries-linux-amd64.tar.gz","arch":"linux-amd64","sha256":"${amd64_sha}","go_version":"go1.26.0","built_at":"2026-04-11T00:00:00Z"},{"file":"ltbase-blueprint-binaries-linux-arm64.tar.gz","arch":"linux-arm64","sha256":"mismatch","go_version":"go1.26.0","built_at":"2026-04-11T00:00:00Z"}]}
 EOF
-
-(cd "${temp_dir}/artifact" && zip -qr "${temp_dir}/artifact.zip" infra)
 
 cat >"${fake_bin}/gh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 printf 'gh %s\n' "$*" >>"${COMMAND_LOG}"
-if [[ "$*" == *"name=infra-binary-linux-arm64-abc123"* ]]; then
-  printf '%s\n' '{"artifacts":[{"archive_download_url":"https://example.test/artifact.zip"}]}'
+if [[ "$*" == *"repos/example/binaries/releases?per_page=20"* ]]; then
+  printf '%s\n' '[{"tag_name":"r20260411T000000Z","assets":[{"name":"manifest.json","browser_download_url":"https://example.test/manifest.json"},{"name":"ltbase-blueprint-binaries-linux-amd64.tar.gz","browser_download_url":"https://example.test/ltbase-blueprint-binaries-linux-amd64.tar.gz"},{"name":"ltbase-blueprint-binaries-linux-arm64.tar.gz","browser_download_url":"https://example.test/ltbase-blueprint-binaries-linux-arm64.tar.gz"}]}]'
 else
-  printf '%s\n' '{"artifacts":[]}'
+  printf '%s\n' '[]'
 fi
 EOF
 chmod +x "${fake_bin}/gh"
@@ -68,6 +69,7 @@ cat >"${fake_bin}/curl" <<'EOF'
 set -euo pipefail
 printf 'curl %s\n' "$*" >>"${COMMAND_LOG}"
 output=""
+url=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -o)
@@ -75,19 +77,44 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     *)
+      url="$1"
       shift
       ;;
   esac
 done
-cp "${ARTIFACT_ZIP}" "${output}"
+case "${url}" in
+  *manifest.json)
+    cp "${ASSET_ROOT}/manifest.json" "${output}"
+    ;;
+  *ltbase-blueprint-binaries-linux-amd64.tar.gz)
+    cp "${ASSET_ROOT}/ltbase-blueprint-binaries-linux-amd64.tar.gz" "${output}"
+    ;;
+  *ltbase-blueprint-binaries-linux-arm64.tar.gz)
+    cp "${ASSET_ROOT}/ltbase-blueprint-binaries-linux-arm64.tar.gz" "${output}"
+    ;;
+  *)
+    exit 1
+    ;;
+esac
 EOF
 chmod +x "${fake_bin}/curl"
 
-gout="${temp_dir}/github-output.txt"
-PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" ARTIFACT_ZIP="${temp_dir}/artifact.zip" GH_TOKEN="test-token" GITHUB_OUTPUT="${gout}" \
-  "${SCRIPT_PATH}" --repository example/repo --commit abc123 --working-directory "${temp_dir}/blueprint/infra"
+cat >"${fake_bin}/uname" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == "-m" ]]; then
+  printf 'x86_64\n'
+else
+  /usr/bin/uname "$@"
+fi
+EOF
+chmod +x "${fake_bin}/uname"
 
-assert_log_contains "${log_file}" "gh api repos/example/repo/actions/artifacts?name=infra-binary-linux-arm64-abc123"
+gout="${temp_dir}/github-output.txt"
+PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" ASSET_ROOT="${temp_dir}/release-assets" GH_TOKEN="test-token" GITHUB_OUTPUT="${gout}" \
+  "${SCRIPT_PATH}" --repository example/repo --binaries-repo example/binaries --commit abc123 --working-directory "${temp_dir}/blueprint/infra"
+
+assert_log_contains "${log_file}" "gh api repos/example/binaries/releases?per_page=20"
 assert_log_contains "${log_file}" "curl -fsSL -H Authorization: Bearer test-token"
 assert_file_contains "${gout}" "installed=true"
 if [[ ! -x "${temp_dir}/blueprint/infra/.pulumi/bin/ltbase-infra" ]]; then
@@ -97,8 +124,8 @@ fi
 : >"${log_file}"
 printf '%s\n' >"${gout}"
 rm -rf "${temp_dir}/blueprint/infra/.pulumi"
-PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" ARTIFACT_ZIP="${temp_dir}/artifact.zip" GH_TOKEN="test-token" GITHUB_OUTPUT="${gout}" \
-  "${SCRIPT_PATH}" --repository example/repo --commit def456 --working-directory "${temp_dir}/blueprint/infra"
+PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" ASSET_ROOT="${temp_dir}/release-assets" GH_TOKEN="test-token" GITHUB_OUTPUT="${gout}" \
+  "${SCRIPT_PATH}" --repository example/repo --binaries-repo example/binaries --commit def456 --working-directory "${temp_dir}/blueprint/infra"
 
 assert_file_contains "${gout}" "installed=false"
 if [[ -e "${temp_dir}/blueprint/infra/.pulumi/bin/ltbase-infra" ]]; then
