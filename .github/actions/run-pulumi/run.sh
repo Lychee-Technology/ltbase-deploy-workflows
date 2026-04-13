@@ -44,6 +44,8 @@ for name in WORKING_DIRECTORY COMMAND_NAME STACK PREFER_WRAPPER WRAPPER_PATH; do
   fi
 done
 
+working_directory_abs="$(cd "${WORKING_DIRECTORY}" && pwd)"
+
 case "${COMMAND_NAME}" in
   preview)
     pulumi_args=(preview --stack "${STACK}" --non-interactive --logtostderr --logflow -v=6)
@@ -62,7 +64,7 @@ esac
 
 wrapper_candidate="${WRAPPER_PATH}"
 if [[ "${wrapper_candidate}" != /* ]]; then
-  wrapper_candidate="${WORKING_DIRECTORY}/${wrapper_candidate}"
+  wrapper_candidate="${working_directory_abs}/${wrapper_candidate}"
 fi
 
 runner=(pulumi)
@@ -77,6 +79,6 @@ printf 'Runner architecture: %s\n' "$(uname -m)"
 printf 'Go env hints: GOMAXPROCS=%s, GOMEMLIMIT=%s, GOGC=%s\n' "${GOMAXPROCS:-}" "${GOMEMLIMIT:-}" "${GOGC:-}"
 
 (
-  cd "${WORKING_DIRECTORY}"
+  cd "${working_directory_abs}"
   "${runner[@]}" "${pulumi_args[@]}"
 )

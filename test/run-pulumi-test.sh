@@ -51,12 +51,12 @@ printf 'wrapper %s\n' "$*" >>"${COMMAND_LOG}"
 EOF
 chmod +x "${temp_dir}/blueprint/infra/scripts/pulumi-wrapper.sh"
 
-PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
-  --working-directory "${temp_dir}/blueprint/infra" \
+(cd "${temp_dir}" && PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+  --working-directory "blueprint/infra" \
   --command preview \
   --stack devo \
   --prefer-wrapper true \
-  --wrapper-path "${temp_dir}/blueprint/infra/scripts/pulumi-wrapper.sh"
+  --wrapper-path "scripts/pulumi-wrapper.sh")
 
 assert_log_contains "${log_file}" "wrapper preview --stack devo --non-interactive --logtostderr --logflow -v=6"
 
