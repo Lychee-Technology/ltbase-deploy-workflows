@@ -16,7 +16,7 @@ Blueprint repositories can optionally publish commit-bound prebuilt `ltbase-infr
   - `run-codedeploy-canary`
   - `reconcile-managed-dsql-endpoint`
 - scripts:
-  - `scripts/reconcile-managed-dsql-endpoint.sh` — local/manual equivalent of the action
+  - `scripts/reconcile-managed-dsql-endpoint.sh` - local/manual equivalent of the action
 
 ## Pulumi Execution Hardening
 
@@ -44,7 +44,7 @@ Reusable workflow inputs:
 - `releases_repo`
 - `working_directory`
 - `infra_binaries_repo` _(optional, default `Lychee-Technology/ltbase-private-deployment-binaries`)_
-- `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ — when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
+- `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ - when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
 
 Reusable workflow secrets:
 
