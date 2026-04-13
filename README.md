@@ -2,7 +2,7 @@
 
 Public reusable GitHub Actions workflows for the LTBase private deployment channel.
 
-Blueprint repositories can optionally publish a commit-bound prebuilt `ltbase-infra` binary as a GitHub Actions artifact named `infra-binary-linux-arm64-<commit_sha>`. When present, the reusable workflows install that binary before running Pulumi. When absent or invalid, they fall back to the blueprint repo's normal source-build wrapper path.
+Blueprint repositories can optionally publish commit-bound prebuilt `ltbase-infra` binaries into `Lychee-Technology/ltbase-private-deployment-binaries`. The reusable workflows inspect release manifests in that public repo, install the exact matching binary for the checked-out blueprint commit and runner architecture, and fall back to the blueprint repo's normal source-build wrapper path when no trusted match exists.
 
 ## Contents
 
@@ -16,7 +16,7 @@ Blueprint repositories can optionally publish a commit-bound prebuilt `ltbase-in
   - `run-codedeploy-canary`
   - `reconcile-managed-dsql-endpoint`
 - scripts:
-  - `scripts/reconcile-managed-dsql-endpoint.sh` — local/manual equivalent of the action
+  - `scripts/reconcile-managed-dsql-endpoint.sh` - local/manual equivalent of the action
 
 ## Pulumi Execution Hardening
 
@@ -24,7 +24,7 @@ Reusable workflows now route `pulumi preview`, `pulumi up`, and `pulumi refresh`
 
 The action:
 
-- installs a prebuilt `ltbase-infra` binary from the blueprint repo when an exact commit match is available
+- installs a prebuilt `ltbase-infra` binary from `ltbase-private-deployment-binaries` when an exact source-repo, source-commit, and architecture match is available
 - prefers `infra/scripts/pulumi-wrapper.sh` in the blueprint repo when that file exists and is executable
 - falls back to the direct `pulumi` CLI when no wrapper is present
 - standardizes verbose logging and Go memory tuning in one place
@@ -43,7 +43,8 @@ Reusable workflow inputs:
 - `pulumi_secrets_provider`
 - `releases_repo`
 - `working_directory`
-- `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ — when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
+- `infra_binaries_repo` _(optional, default `Lychee-Technology/ltbase-private-deployment-binaries`)_
+- `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ - when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
 
 Reusable workflow secrets:
 

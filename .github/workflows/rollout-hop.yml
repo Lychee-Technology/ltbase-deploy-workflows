@@ -29,6 +29,10 @@ on:
         type: string
         required: false
         default: infra
+      infra_binaries_repo:
+        type: string
+        required: false
+        default: Lychee-Technology/ltbase-private-deployment-binaries
       workflow_actions_ref:
         type: string
         required: false
@@ -100,6 +104,7 @@ jobs:
         uses: ./.ltbase/workflow-repo/.github/actions/install-prebuilt-infra-binary
         with:
           repository: ${{ github.repository }}
+          binaries-repo: ${{ inputs.infra_binaries_repo }}
           commit: ${{ github.sha }}
           working-directory: blueprint/${{ inputs.working_directory }}
           token: ${{ github.token }}

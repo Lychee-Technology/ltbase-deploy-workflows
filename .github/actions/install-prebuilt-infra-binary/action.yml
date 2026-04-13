@@ -5,6 +5,9 @@ inputs:
   repository:
     description: Blueprint repository that owns the artifact
     required: true
+  binaries-repo:
+    description: Repository holding published prebuilt infra binary releases
+    required: true
   commit:
     description: Exact blueprint commit to match
     required: true
@@ -30,5 +33,6 @@ runs:
       run: |
         "${{ github.action_path }}/install.sh" \
           --repository "${{ inputs.repository }}" \
+          --binaries-repo "${{ inputs.binaries-repo }}" \
           --commit "${{ inputs.commit }}" \
           --working-directory "${{ inputs.working-directory }}"
