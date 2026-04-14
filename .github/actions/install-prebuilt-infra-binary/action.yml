@@ -1,5 +1,5 @@
 name: Install Prebuilt Infra Binary
-description: Install a commit-bound prebuilt Pulumi infra binary from the blueprint repository when available
+description: Install an upstream-template-bound prebuilt Pulumi infra binary from blueprint provenance when available
 
 inputs:
   binaries-repo:
