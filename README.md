@@ -46,6 +46,8 @@ Reusable workflow inputs:
 - `infra_binaries_repo` _(optional, default `Lychee-Technology/ltbase-private-deployment-binaries`)_
 - `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ - when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
 
+Prebuilt infra binary lookup now reads `blueprint/__ref__/template-provenance.json` from the checked-out deployment repo and matches releases by upstream template repository, upstream template commit, `build_fingerprint`, and runner architecture. If provenance is missing, malformed, delayed, or mismatched, the workflow falls back to source build.
+
 Reusable workflow secrets:
 
 - `aws_role_arn`
