@@ -2,7 +2,7 @@
 
 Public reusable GitHub Actions workflows for the LTBase private deployment channel.
 
-Blueprint repositories can optionally publish commit-bound prebuilt `ltbase-infra` binaries into `Lychee-Technology/ltbase-private-deployment-binaries`. The reusable workflows inspect release manifests in that public repo, install the exact matching binary for the checked-out blueprint commit and runner architecture, and fall back to the blueprint repo's normal source-build wrapper path when no trusted match exists.
+The upstream template repository can publish upstream-template-bound prebuilt `ltbase-infra` binaries into `Lychee-Technology/ltbase-private-deployment-binaries`. The reusable workflows inspect release manifests in that public repo, match them against checked-in blueprint provenance and runner architecture, and fall back to the blueprint repo's normal source-build wrapper path when no trusted match exists.
 
 ## Contents
 
