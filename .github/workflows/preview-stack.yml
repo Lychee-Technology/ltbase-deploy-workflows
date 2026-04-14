@@ -86,9 +86,8 @@ jobs:
         id: prebuilt
         uses: ./.ltbase/workflow-repo/.github/actions/install-prebuilt-infra-binary
         with:
-          repository: ${{ github.repository }}
           binaries-repo: ${{ inputs.infra_binaries_repo }}
-          commit: ${{ github.sha }}
+          provenance-path: blueprint/__ref__/template-provenance.json
           working-directory: blueprint/${{ inputs.working_directory }}
           token: ${{ github.token }}
       - uses: aws-actions/configure-aws-credentials@v5

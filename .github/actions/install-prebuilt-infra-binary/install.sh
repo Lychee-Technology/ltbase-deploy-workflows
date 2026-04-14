@@ -2,23 +2,18 @@
 
 set -euo pipefail
 
-REPOSITORY=""
 BINARIES_REPO=""
-COMMIT=""
+PROVENANCE_PATH=""
 WORKING_DIRECTORY=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --repository)
-      REPOSITORY="$2"
-      shift 2
-      ;;
     --binaries-repo)
       BINARIES_REPO="$2"
       shift 2
       ;;
-    --commit)
-      COMMIT="$2"
+    --provenance-path)
+      PROVENANCE_PATH="$2"
       shift 2
       ;;
     --working-directory)
@@ -32,12 +27,28 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-for name in REPOSITORY BINARIES_REPO COMMIT WORKING_DIRECTORY GH_TOKEN GITHUB_OUTPUT; do
+for name in BINARIES_REPO PROVENANCE_PATH WORKING_DIRECTORY GH_TOKEN GITHUB_OUTPUT; do
   if [[ -z "${!name:-}" ]]; then
     echo "${name} is required" >&2
     exit 1
   fi
 done
+
+if [[ ! -f "${PROVENANCE_PATH}" ]]; then
+  printf 'Template provenance file missing; falling back to source build\n'
+  printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
+  exit 0
+fi
+
+TEMPLATE_REPOSITORY="$(jq -r '.template_repository // empty' "${PROVENANCE_PATH}")"
+TEMPLATE_COMMIT="$(jq -r '.template_commit // empty' "${PROVENANCE_PATH}")"
+BUILD_FINGERPRINT="$(jq -r '.build_fingerprint // empty' "${PROVENANCE_PATH}")"
+
+if [[ -z "${TEMPLATE_REPOSITORY}" || -z "${TEMPLATE_COMMIT}" || -z "${BUILD_FINGERPRINT}" ]]; then
+  printf 'Template provenance file malformed; falling back to source build\n'
+  printf 'installed=false\n' >> "${GITHUB_OUTPUT}"
+  exit 0
+fi
 
 case "$(uname -m)" in
   x86_64|amd64)
@@ -53,7 +64,7 @@ case "$(uname -m)" in
     ;;
 esac
 
-printf 'Looking for prebuilt infra binary releases in %s for %s@%s (%s)\n' "${BINARIES_REPO}" "${REPOSITORY}" "${COMMIT}" "${TARGET_ARCH}"
+printf 'Looking for prebuilt infra binary releases in %s for template %s@%s (%s, %s)\n' "${BINARIES_REPO}" "${TEMPLATE_REPOSITORY}" "${TEMPLATE_COMMIT}" "${BUILD_FINGERPRINT}" "${TARGET_ARCH}"
 
 release_json="$(gh api "repos/${BINARIES_REPO}/releases?per_page=20")"
 
@@ -76,7 +87,8 @@ for ((idx=0; idx<release_count; idx++)); do
 
   manifest_repo="$(jq -r '.source_repository // empty' "${tmp_dir}/manifest-${idx}.json")"
   manifest_commit="$(jq -r '.source_commit // empty' "${tmp_dir}/manifest-${idx}.json")"
-  if [[ "${manifest_repo}" != "${REPOSITORY}" || "${manifest_commit}" != "${COMMIT}" ]]; then
+  manifest_fingerprint="$(jq -r '.build_fingerprint // empty' "${tmp_dir}/manifest-${idx}.json")"
+  if [[ "${manifest_repo}" != "${TEMPLATE_REPOSITORY}" || "${manifest_commit}" != "${TEMPLATE_COMMIT}" || "${manifest_fingerprint}" != "${BUILD_FINGERPRINT}" ]]; then
     continue
   fi
 
