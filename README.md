@@ -15,6 +15,7 @@ The upstream template repository can publish upstream-template-bound prebuilt `l
   - `download-private-release`
   - `run-codedeploy-canary`
   - `reconcile-managed-dsql-endpoint`
+  - `reconcile-project-info`
 - scripts:
   - `scripts/reconcile-managed-dsql-endpoint.sh` - local/manual equivalent of the action
 
@@ -45,6 +46,14 @@ Reusable workflow inputs:
 - `working_directory`
 - `infra_binaries_repo` _(optional, default `Lychee-Technology/ltbase-private-deployment-binaries`)_
 - `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ - when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
+
+After every successful `pulumi up`, the rollout workflows also reconcile the authservice `project info` item in DynamoDB before output capture. The internal `reconcile-project-info` action reads `projectId`, `apiId`, `apiBaseUrl`, and `tableName` from stack outputs, resolves the current AWS account id with `sts get-caller-identity`, and writes the record with:
+
+- `PK=project#<projectId>`
+- `SK=info`
+- `account_id=<current aws account id>`
+- `api_id=<deployed data plane api id>`
+- `api_base_url=https://<api domain>`
 
 Prebuilt infra binary lookup now reads `blueprint/__ref__/template-provenance.json` from the checked-out deployment repo and matches releases by upstream template repository, upstream template commit, `build_fingerprint`, and runner architecture. If provenance is missing, malformed, delayed, or mismatched, the workflow falls back to source build.
 

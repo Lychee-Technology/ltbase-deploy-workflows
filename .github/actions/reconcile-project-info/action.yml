@@ -1,0 +1,58 @@
+name: Reconcile Project Info
+description: >
+  Reads deployed project metadata from Pulumi outputs, resolves the current AWS
+  account id, and upserts the authservice-compatible project info record into
+  DynamoDB. Must run after pulumi up and before output capture.
+
+inputs:
+  stack:
+    description: Pulumi stack name
+    required: true
+  aws-region:
+    description: AWS region where the DynamoDB table lives
+    required: true
+  working-directory:
+    description: Pulumi project directory (blueprint-relative)
+    required: false
+    default: infra
+
+runs:
+  using: composite
+  steps:
+    - name: Reconcile project info
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        set -euo pipefail
+
+        project_id="$(pulumi stack output projectId --stack "${{ inputs.stack }}" 2>/dev/null || true)"
+        api_id="$(pulumi stack output apiId --stack "${{ inputs.stack }}" 2>/dev/null || true)"
+        api_base_url="$(pulumi stack output apiBaseUrl --stack "${{ inputs.stack }}" 2>/dev/null || true)"
+        table_name="$(pulumi stack output tableName --stack "${{ inputs.stack }}" 2>/dev/null || true)"
+
+        if [[ -z "${project_id}" || -z "${api_id}" || -z "${api_base_url}" || -z "${table_name}" ]]; then
+          echo "failed to resolve project info outputs for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        if ! account_id="$(aws sts get-caller-identity --query Account --output text)"; then
+          echo "failed to resolve AWS account id for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        if [[ -z "${account_id}" || "${account_id}" == "None" || "${account_id}" == "null" ]]; then
+          echo "AWS account id was empty for stack ${{ inputs.stack }}" >&2
+          exit 1
+        fi
+
+        item="$(cat <<EOF
+        {"PK":{"S":"project#${project_id}"},"SK":{"S":"info"},"account_id":{"S":"${account_id}"},"api_id":{"S":"${api_id}"},"api_base_url":{"S":"${api_base_url}"}}
+        EOF
+        )"
+
+        aws dynamodb put-item \
+          --table-name "${table_name}" \
+          --item "${item}" \
+          --region "${{ inputs.aws-region }}"
+
+        echo "project info reconciled for ${project_id}"

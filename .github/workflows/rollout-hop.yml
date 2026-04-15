@@ -159,6 +159,12 @@ jobs:
           stack: ${{ inputs.pulumi_stack }}
           aws-region: ${{ inputs.aws_region }}
           working-directory: blueprint/${{ inputs.working_directory }}
+      - name: Reconcile project info
+        uses: ./.ltbase/workflow-repo/.github/actions/reconcile-project-info
+        with:
+          stack: ${{ inputs.pulumi_stack }}
+          aws-region: ${{ inputs.aws_region }}
+          working-directory: blueprint/${{ inputs.working_directory }}
       - name: Capture deployment outputs
         working-directory: blueprint/${{ inputs.working_directory }}
         run: pulumi stack output --json --stack "${{ inputs.pulumi_stack }}" > /tmp/deployment-outputs.json
