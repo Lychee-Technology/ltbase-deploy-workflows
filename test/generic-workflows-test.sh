@@ -53,6 +53,7 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/ac
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "infra_binaries_repo"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/run-pulumi"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: up"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: refresh"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "strategy:"
