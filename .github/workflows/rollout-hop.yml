@@ -159,6 +159,20 @@ jobs:
           stack: ${{ inputs.pulumi_stack }}
           aws-region: ${{ inputs.aws_region }}
           working-directory: blueprint/${{ inputs.working_directory }}
+      - name: Re-apply stack after managed DSQL reconcile
+        if: ${{ inputs.reconcile_managed_dsql_endpoint }}
+        uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
+          GOMAXPROCS: "2"
+          GOMEMLIMIT: 3GiB
+          GOGC: "50"
+        with:
+          working-directory: blueprint/${{ inputs.working_directory }}
+          command: up
+          stack: ${{ inputs.pulumi_stack }}
+          prefer-wrapper: true
+          wrapper-path: scripts/pulumi-wrapper.sh
       - name: Reconcile project info
         uses: ./.ltbase/workflow-repo/.github/actions/reconcile-project-info
         with:
