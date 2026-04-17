@@ -9,6 +9,17 @@ fail() {
   exit 1
 }
 
+line_number_for() {
+  local path="$1"
+  local needle="$2"
+  local line
+  line="$(grep -n -F -- "${needle}" "${path}" | head -n 1 | cut -d: -f1)"
+  if [[ -z "${line}" ]]; then
+    fail "expected ${path} to contain line: ${needle}"
+  fi
+  printf '%s\n' "${line}"
+}
+
 assert_file_contains() {
   local path="$1"
   local needle="$2"
@@ -54,8 +65,30 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "infra_bina
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/run-pulumi"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "reconcile_managed_dsql_endpoint"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Re-apply stack after managed DSQL reconcile"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.reconcile_managed_dsql_endpoint }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: up"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: refresh"
+
+reconcile_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Reconcile managed DSQL endpoint")"
+reapply_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Re-apply stack after managed DSQL reconcile")"
+project_info_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Reconcile project info")"
+outputs_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Capture deployment outputs")"
+canary_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Run data plane canary")"
+
+if (( reconcile_line >= reapply_line )); then
+  fail "expected managed DSQL reconcile to happen before second apply"
+fi
+if (( reapply_line >= project_info_line )); then
+  fail "expected second apply to happen before project info reconcile"
+fi
+if (( project_info_line >= outputs_line )); then
+  fail "expected project info reconcile to happen before output capture"
+fi
+if (( outputs_line >= canary_line )); then
+  fail "expected output capture to happen before canary steps"
+fi
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "strategy:"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04-arm"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04"
