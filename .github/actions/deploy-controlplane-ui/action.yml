@@ -1,0 +1,39 @@
+name: Deploy Control Plane UI
+description: Deploy the control plane UI release artifact to Cloudflare Pages
+
+inputs:
+  manifest-path:
+    description: Path to the downloaded release manifest.json file
+    required: true
+  runtime-config-json:
+    description: Runtime config JSON written into the deployed artifact
+    required: true
+  cloudflare-pages-project:
+    description: Cloudflare Pages project name
+    required: true
+  pages-branch:
+    description: Optional Cloudflare Pages branch name
+    required: false
+    default: ""
+  artifact-name:
+    description: Manifest artifact name selector
+    required: false
+    default: controlplane-ui
+  deploy-root:
+    description: Optional unpack directory override
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Deploy control plane UI artifact
+      shell: bash
+      run: |
+        "${{ github.action_path }}/deploy.sh" \
+          --manifest-path "${{ inputs.manifest-path }}" \
+          --runtime-config-json "${{ inputs.runtime-config-json }}" \
+          --cloudflare-pages-project "${{ inputs.cloudflare-pages-project }}" \
+          --pages-branch "${{ inputs.pages-branch }}" \
+          --artifact-name "${{ inputs.artifact-name }}" \
+          --deploy-root "${{ inputs.deploy-root }}"
