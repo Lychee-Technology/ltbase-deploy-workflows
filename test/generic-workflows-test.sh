@@ -31,6 +31,17 @@ assert_file_contains() {
   fi
 }
 
+assert_file_not_contains() {
+  local path="$1"
+  local needle="$2"
+  if [[ ! -f "${path}" ]]; then
+    fail "missing file: ${path}"
+  fi
+  if grep -Fq "${needle}" "${path}"; then
+    fail "expected ${path} to not contain: ${needle}"
+  fi
+}
+
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "name: Preview Stack"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "pulumi_secrets_provider"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "workflow_actions_ref"
@@ -48,6 +59,7 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "infra_bi
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" ".github/actions/run-pulumi"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "command: preview"
+assert_file_not_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" ".github/actions/deploy-controlplane-ui"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "workflow_actions_ref"
@@ -64,6 +76,12 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/ac
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "infra_binaries_repo"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/run-pulumi"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_pages_project"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_artifact_name"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_runtime_config_json"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/deploy-controlplane-ui"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.controlplane_ui_pages_project != '' }}"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "Materialize Control Plane UI runtime config"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "reconcile_managed_dsql_endpoint"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Re-apply stack after managed DSQL reconcile"

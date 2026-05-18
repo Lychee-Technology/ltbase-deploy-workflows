@@ -43,6 +43,9 @@ Reusable workflow inputs:
 - `pulumi_backend_url`
 - `pulumi_secrets_provider`
 - `releases_repo`
+- `controlplane_ui_pages_project` _(optional)_ - when set, `rollout-hop.yml` also deploys the Control Plane UI release artifact into this Cloudflare Pages project
+- `controlplane_ui_runtime_config_path` _(optional)_ - caller-managed path to the rendered `ltbase-controlplane.config.json` file injected into the released UI bundle before publish
+- `controlplane_ui_artifact_name` _(optional, default `controlplane-ui`)_ - manifest artifact name to publish as the Control Plane UI site bundle
 - `working_directory`
 - `infra_binaries_repo` _(optional, default `Lychee-Technology/ltbase-private-deployment-binaries`)_
 - `reconcile_managed_dsql_endpoint` _(optional, default `false`)_ - when `true`, fetches the authoritative DSQL cluster endpoint from AWS after `pulumi up` and writes it back to Pulumi config as `dsqlEndpoint` before output capture (and before CodeDeploy canaries in `promote-prod`). Required for stacks that use managed Aurora DSQL.
@@ -62,6 +65,8 @@ Reusable workflow secrets:
 - `aws_role_arn`
 - `ltbase_releases_token`
 - `cloudflare_api_token`
+
+When `controlplane_ui_pages_project` is provided, `rollout-hop.yml` also invokes the `deploy-controlplane-ui` composite action. That action validates the named UI artifact entry from `manifest.json`, unpacks the site bundle, injects the caller-rendered `ltbase-controlplane.config.json`, and publishes it with `wrangler pages deploy`. Preview workflows stay infra-only.
 
 ## Version Policy
 
