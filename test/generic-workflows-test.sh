@@ -80,20 +80,40 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlpla
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_artifact_name"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_runtime_config_json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/deploy-controlplane-ui"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.controlplane_ui_pages_project != '' }}"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "Materialize Control Plane UI runtime config"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.controlplane_ui_domain != '' && inputs.controlplane_ui_pages_project != '' && inputs.controlplane_ui_stacks != '' }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "reconcile_managed_dsql_endpoint"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Deploy control plane UI"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "runtime-config-json: \${{ steps.controlplane_ui_config.outputs.runtime_config_json }}"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cloudflare-pages-project: \${{ inputs.controlplane_ui_pages_project }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Re-apply stack after managed DSQL reconcile"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.reconcile_managed_dsql_endpoint }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: up"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "command: refresh"
+assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" "controlplane_ui_domain"
+assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" "controlplane_ui_pages_project"
+assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" "controlplane_ui_stacks"
+assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" "controlplane_ui_domain"
+assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" "controlplane_ui_pages_project"
+assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" "controlplane_ui_stacks"
+assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "name: Preview Stack"
+
+if grep -Fq ".github/actions/deploy-controlplane-ui" "${ROOT_DIR}/.github/workflows/preview-stack.yml"; then
+  fail "preview-stack workflow must not reference the control plane UI deploy action"
+fi
+
+if grep -Fq "controlplane_ui_domain" "${ROOT_DIR}/.github/workflows/preview-stack.yml"; then
+  fail "preview-stack workflow must remain infra-only"
+fi
 
 reconcile_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Reconcile managed DSQL endpoint")"
 reapply_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Re-apply stack after managed DSQL reconcile")"
 project_info_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Reconcile project info")"
 outputs_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Capture deployment outputs")"
 canary_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Run data plane canary")"
+refresh_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Refresh stack")"
+refresh_outputs_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Capture refreshed deployment outputs")"
+ui_deploy_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Deploy control plane UI")"
 
 if (( reconcile_line >= reapply_line )); then
   fail "expected managed DSQL reconcile to happen before second apply"
@@ -107,6 +127,13 @@ fi
 if (( outputs_line >= canary_line )); then
   fail "expected output capture to happen before canary steps"
 fi
+if (( canary_line >= refresh_outputs_line )); then
+  fail "expected refreshed output capture to happen after canary steps"
+fi
+if (( ui_deploy_line <= refresh_outputs_line )); then
+  fail "expected UI deploy to happen after refreshed output capture"
+fi
+assert_file_not_contains "${ROOT_DIR}/.github/workflows/preview.yml" "deploy-controlplane-ui"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "strategy:"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04-arm"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "ubuntu-24.04"
@@ -115,6 +142,9 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "bl
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "repository: \${{ inputs.blueprint_repository }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" ".github/actions/download-private-release"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "token: \${{ secrets.LTBASE_RELEASES_TOKEN }}"
+assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "name: Test Workflows Repo"
+assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "bash test/generic-workflows-test.sh"
+assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "bash test/deploy-controlplane-ui-test.sh"
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" ".github/workflows/preview-stack.yml@"

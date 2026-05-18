@@ -1,0 +1,17 @@
+name: Test Workflows Repo
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shell-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run workflow structure tests
+        run: bash test/generic-workflows-test.sh
+      - name: Run control plane UI deploy action tests
+        run: bash test/deploy-controlplane-ui-test.sh
+      - name: Run control plane UI aggregation tests
+        run: bash test/aggregate-controlplane-ui-config-test.sh

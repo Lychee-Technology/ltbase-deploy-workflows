@@ -40,6 +40,15 @@ on:
           calls aws dsql get-cluster to fetch the authoritative endpoint,
           and writes it back as pulumi config dsqlEndpoint. Runs after the
           first pulumi up and before the CodeDeploy canary steps.
+      controlplane_ui_domain:
+        type: string
+        required: false
+      controlplane_ui_pages_project:
+        type: string
+        required: false
+      controlplane_ui_stacks:
+        type: string
+        required: false
     secrets:
       aws_role_arn:
         required: true
@@ -76,6 +85,9 @@ jobs:
       run_canary: true
       refresh_after_apply: true
       reconcile_managed_dsql_endpoint: ${{ inputs.reconcile_managed_dsql_endpoint }}
+      controlplane_ui_domain: ${{ inputs.controlplane_ui_domain }}
+      controlplane_ui_pages_project: ${{ inputs.controlplane_ui_pages_project }}
+      controlplane_ui_stacks: ${{ inputs.controlplane_ui_stacks }}
     secrets:
       aws_role_arn: ${{ secrets.aws_role_arn }}
       ltbase_releases_token: ${{ secrets.ltbase_releases_token }}

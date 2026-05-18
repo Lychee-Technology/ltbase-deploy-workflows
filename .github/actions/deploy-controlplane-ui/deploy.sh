@@ -2,80 +2,104 @@
 
 set -euo pipefail
 
-RELEASE_DIR=""
 MANIFEST_PATH=""
-PAGES_PROJECT=""
-CLOUDFLARE_ACCOUNT_ID_INPUT=""
-RUNTIME_CONFIG_PATH=""
+RUNTIME_CONFIG_JSON=""
+CLOUDFLARE_PAGES_PROJECT=""
+PAGES_BRANCH=""
 ARTIFACT_NAME="controlplane-ui"
+DEPLOY_ROOT=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --release-dir)
-      RELEASE_DIR="$2"
-      shift 2
-      ;;
     --manifest-path)
       MANIFEST_PATH="$2"
       shift 2
       ;;
-    --pages-project)
-      PAGES_PROJECT="$2"
+    --runtime-config-json)
+      RUNTIME_CONFIG_JSON="$2"
       shift 2
       ;;
-    --cloudflare-account-id)
-      CLOUDFLARE_ACCOUNT_ID_INPUT="$2"
+    --cloudflare-pages-project)
+      CLOUDFLARE_PAGES_PROJECT="$2"
       shift 2
       ;;
-    --runtime-config-path)
-      RUNTIME_CONFIG_PATH="$2"
+    --pages-branch)
+      PAGES_BRANCH="$2"
       shift 2
       ;;
     --artifact-name)
       ARTIFACT_NAME="$2"
       shift 2
       ;;
+    --deploy-root)
+      DEPLOY_ROOT="$2"
+      shift 2
+      ;;
     *)
-      printf 'unknown argument: %s\n' "$1" >&2
+      echo "unknown argument: $1" >&2
       exit 1
       ;;
   esac
 done
 
-for name in RELEASE_DIR MANIFEST_PATH PAGES_PROJECT CLOUDFLARE_ACCOUNT_ID_INPUT RUNTIME_CONFIG_PATH ARTIFACT_NAME; do
-  if [[ -z "${!name}" ]]; then
-    printf '%s is required\n' "${name}" >&2
+for name in RUNTIME_CONFIG_JSON CLOUDFLARE_PAGES_PROJECT ARTIFACT_NAME; do
+  if [[ -z "${!name:-}" ]]; then
+    echo "${name} is required" >&2
     exit 1
   fi
 done
 
 if [[ ! -f "${MANIFEST_PATH}" ]]; then
-  printf 'manifest not found: %s\n' "${MANIFEST_PATH}" >&2
+  echo "manifest.json not found: ${MANIFEST_PATH}" >&2
   exit 1
 fi
 
-if [[ ! -f "${RUNTIME_CONFIG_PATH}" ]]; then
-  printf 'runtime config not found: %s\n' "${RUNTIME_CONFIG_PATH}" >&2
+if ! printf '%s' "${RUNTIME_CONFIG_JSON}" | jq -e 'type == "object" and (.stacks | type == "array")' >/dev/null; then
+  echo "runtime config JSON must be an object with a stacks array" >&2
   exit 1
 fi
 
-artifact_file="$(jq -r --arg name "${ARTIFACT_NAME}" '.artifacts[]? | select(.name == $name) | .file' "${MANIFEST_PATH}")"
+artifact_file="$(jq -r --arg artifact_name "${ARTIFACT_NAME}" '.artifacts[]? | select(.name == $artifact_name) | .file' "${MANIFEST_PATH}" | head -n 1)"
+
 if [[ -z "${artifact_file}" || "${artifact_file}" == "null" ]]; then
-  printf 'UI artifact manifest entry not found for name: %s\n' "${ARTIFACT_NAME}" >&2
+  echo "control plane UI artifact entry not found in manifest" >&2
   exit 1
 fi
 
-artifact_path="${RELEASE_DIR}/${artifact_file}"
+release_dir="$(dirname "${MANIFEST_PATH}")"
+artifact_path="${release_dir}/${artifact_file}"
+
 if [[ ! -f "${artifact_path}" ]]; then
-  printf 'UI artifact file not found: %s\n' "${artifact_path}" >&2
+  echo "control plane UI artifact file not found: ${artifact_path}" >&2
   exit 1
 fi
 
-site_dir="$(dirname "${RELEASE_DIR}")/site"
-rm -rf "${site_dir}"
-mkdir -p "${site_dir}"
+if [[ -z "${DEPLOY_ROOT}" ]]; then
+  DEPLOY_ROOT="$(mktemp -d)"
+  cleanup_deploy_root=true
+else
+  cleanup_deploy_root=false
+  rm -rf "${DEPLOY_ROOT}"
+  mkdir -p "${DEPLOY_ROOT}"
+fi
 
-tar -xzf "${artifact_path}" -C "${site_dir}"
-cp "${RUNTIME_CONFIG_PATH}" "${site_dir}/ltbase-controlplane.config.json"
+if [[ "${cleanup_deploy_root}" == true ]]; then
+  trap 'rm -rf "${DEPLOY_ROOT}"' EXIT
+fi
 
-wrangler pages deploy "${site_dir}" --project-name "${PAGES_PROJECT}"
+tar -xzf "${artifact_path}" -C "${DEPLOY_ROOT}"
+
+pages_dir="${DEPLOY_ROOT}"
+
+printf '%s' "${RUNTIME_CONFIG_JSON}" > "${pages_dir}/ltbase-controlplane.config.json"
+
+if ! command -v wrangler >/dev/null 2>&1; then
+  npm install --global wrangler >/dev/null
+fi
+
+deploy_args=(pages deploy "${pages_dir}" --project-name "${CLOUDFLARE_PAGES_PROJECT}")
+if [[ -n "${PAGES_BRANCH}" ]]; then
+  deploy_args+=(--branch "${PAGES_BRANCH}")
+fi
+
+wrangler "${deploy_args[@]}"

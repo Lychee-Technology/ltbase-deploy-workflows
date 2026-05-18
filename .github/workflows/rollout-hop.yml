@@ -29,10 +29,6 @@ on:
         type: string
         required: false
         default: ""
-      controlplane_ui_runtime_config_path:
-        type: string
-        required: false
-        default: ""
       controlplane_ui_runtime_config_json:
         type: string
         required: false
@@ -198,28 +194,6 @@ jobs:
       - name: Capture deployment outputs
         working-directory: blueprint/${{ inputs.working_directory }}
         run: pulumi stack output --json --stack "${{ inputs.pulumi_stack }}" > /tmp/deployment-outputs.json
-      - name: Materialize Control Plane UI runtime config
-        if: ${{ inputs.controlplane_ui_pages_project != '' }}
-        env:
-          CONTROLPLANE_UI_RUNTIME_CONFIG_JSON: ${{ inputs.controlplane_ui_runtime_config_json }}
-        run: |
-          if [[ -z "${CONTROLPLANE_UI_RUNTIME_CONFIG_JSON}" ]]; then
-            echo "controlplane_ui_runtime_config_json is required when controlplane_ui_pages_project is set" >&2
-            exit 1
-          fi
-          runtime_config_path="blueprint/${{ inputs.controlplane_ui_runtime_config_path }}"
-          mkdir -p "$(dirname "${runtime_config_path}")"
-          printf '%s' "${CONTROLPLANE_UI_RUNTIME_CONFIG_JSON}" | jq -c '.' > "${runtime_config_path}"
-      - name: Deploy Control Plane UI
-        if: ${{ inputs.controlplane_ui_pages_project != '' }}
-        uses: ./.ltbase/workflow-repo/.github/actions/deploy-controlplane-ui
-        with:
-          release-dir: ${{ steps.download.outputs.release-dir }}
-          manifest-path: ${{ steps.download.outputs.manifest-path }}
-          pages-project: ${{ inputs.controlplane_ui_pages_project }}
-          cloudflare-account-id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          runtime-config-path: ${{ format('blueprint/{0}', inputs.controlplane_ui_runtime_config_path) }}
-          artifact-name: ${{ inputs.controlplane_ui_artifact_name }}
       - name: Run data plane canary
         if: ${{ inputs.run_canary }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-codedeploy-canary
@@ -267,6 +241,30 @@ jobs:
           stack: ${{ inputs.pulumi_stack }}
           prefer-wrapper: true
           wrapper-path: scripts/pulumi-wrapper.sh
+      - name: Capture refreshed deployment outputs
+        if: ${{ inputs.refresh_after_apply }}
+        working-directory: blueprint/${{ inputs.working_directory }}
+        run: pulumi stack output --json --stack "${{ inputs.pulumi_stack }}" > /tmp/deployment-outputs.json
+      - name: Aggregate control plane UI config
+        id: controlplane_ui_config
+        if: ${{ inputs.controlplane_ui_domain != '' && inputs.controlplane_ui_pages_project != '' && inputs.controlplane_ui_stacks != '' }}
+        working-directory: blueprint/${{ inputs.working_directory }}
+        run: |
+          runtime_config_json="$("${{ github.workspace }}/.ltbase/workflow-repo/.github/actions/deploy-controlplane-ui/aggregate-runtime-config.sh" \
+            --working-directory "$(pwd)" \
+            --target-stack "${{ inputs.pulumi_stack }}" \
+            --candidate-stacks "${{ inputs.controlplane_ui_stacks }}" \
+            --controlplane-ui-domain "${{ inputs.controlplane_ui_domain }}")"
+          printf 'runtime_config_json=%s\n' "${runtime_config_json}" >> "$GITHUB_OUTPUT"
+      - name: Deploy control plane UI
+        if: ${{ inputs.controlplane_ui_domain != '' && inputs.controlplane_ui_pages_project != '' && inputs.controlplane_ui_stacks != '' }}
+        uses: ./.ltbase/workflow-repo/.github/actions/deploy-controlplane-ui
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
+        with:
+          manifest-path: ${{ steps.download.outputs.manifest_path }}
+          runtime-config-json: ${{ steps.controlplane_ui_config.outputs.runtime_config_json }}
+          cloudflare-pages-project: ${{ inputs.controlplane_ui_pages_project }}
       - id: outputs
         run: |
           echo "deployment_outputs_json=$(jq -c '.' /tmp/deployment-outputs.json)" >> "$GITHUB_OUTPUT"

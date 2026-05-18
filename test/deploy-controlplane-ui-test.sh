@@ -30,55 +30,47 @@ assert_log_contains() {
   fi
 }
 
+assert_file_equals() {
+  local path="$1"
+  local expected="$2"
+  local actual
+  actual="$(<"${path}")"
+  if [[ "${actual}" != "${expected}" ]]; then
+    fail "expected ${path} to equal ${expected}, got ${actual}"
+  fi
+}
+
+run_expect_fail() {
+  local expected="$1"
+  shift
+  local log_file="$1"
+  shift
+
+  if "$@" >"${log_file}" 2>&1; then
+    fail "expected command to fail: $*"
+  fi
+
+  assert_log_contains "${log_file}" "${expected}"
+}
+
 temp_dir="$(mktemp -d)"
 trap 'rm -rf "${temp_dir}"' EXIT
+
 fake_bin="${temp_dir}/bin"
 log_file="${temp_dir}/commands.log"
-release_dir="${temp_dir}/release"
-mkdir -p "${fake_bin}" "${release_dir}"
+mkdir -p "${fake_bin}"
 touch "${log_file}"
 
-assert_file_contains "${ACTION_PATH}" "release-dir"
-assert_file_contains "${ACTION_PATH}" "manifest-path"
-assert_file_contains "${ACTION_PATH}" "pages-project"
-assert_file_contains "${ACTION_PATH}" "cloudflare-account-id"
-assert_file_contains "${ACTION_PATH}" "runtime-config-path"
-assert_file_contains "${ACTION_PATH}" "artifact-name"
-assert_file_contains "${SCRIPT_PATH}" "wrangler pages deploy"
-assert_file_contains "${SCRIPT_PATH}" "ltbase-controlplane.config.json"
-assert_file_contains "${SCRIPT_PATH}" "UI artifact manifest entry not found"
+manifest_path="${temp_dir}/manifest.json"
 
-cat >"${release_dir}/manifest.json" <<'EOF'
-{
-  "release_id": "v1.2.3",
-  "artifacts": [
-    {
-      "name": "controlplane-ui",
-      "file": "ltbase-controlplane-ui.tar.gz",
-      "sha256": "dummy"
-    }
-  ]
+create_tarball() {
+  local tarball_path="$1"
+  local content_root="${temp_dir}/artifact-content"
+  rm -rf "${content_root}"
+  mkdir -p "${content_root}/dist"
+  printf '<html>ok</html>\n' >"${content_root}/dist/index.html"
+  tar -czf "${tarball_path}" -C "${content_root}" .
 }
-EOF
-
-printf '{"stacks":[]}' >"${temp_dir}/ltbase-controlplane.config.json"
-printf 'placeholder' >"${release_dir}/ltbase-controlplane-ui.tar.gz"
-
-cat >"${fake_bin}/tar" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-printf 'tar %s\n' "$*" >>"${COMMAND_LOG}"
-dest=""
-args=("$@")
-for i in "${!args[@]}"; do
-  if [[ "${args[$i]}" == "-C" && -n "${args[$((i + 1))]:-}" ]]; then
-    dest="${args[$((i + 1))]}"
-  fi
-done
-mkdir -p "${dest}"
-printf '<html>ok</html>' >"${dest}/index.html"
-EOF
-chmod +x "${fake_bin}/tar"
 
 cat >"${fake_bin}/wrangler" <<'EOF'
 #!/usr/bin/env bash
@@ -87,29 +79,68 @@ printf 'wrangler %s\n' "$*" >>"${COMMAND_LOG}"
 EOF
 chmod +x "${fake_bin}/wrangler"
 
-PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
-  --release-dir "${release_dir}" \
-  --manifest-path "${release_dir}/manifest.json" \
-  --pages-project customer-ltbase-controlplane-ui \
-  --cloudflare-account-id cf-account-123 \
-  --runtime-config-path "${temp_dir}/ltbase-controlplane.config.json" \
-  --artifact-name controlplane-ui
+create_manifest() {
+  local artifact_file="$1"
+  cat >"${manifest_path}" <<EOF
+{
+  "release_id": "v1.2.3",
+  "artifacts": [
+    {
+      "name": "controlplane-ui",
+      "file": "${artifact_file}",
+      "sha256": "unused"
+    }
+  ]
+}
+EOF
+}
 
-assert_log_contains "${log_file}" "tar -xzf ${release_dir}/ltbase-controlplane-ui.tar.gz"
-assert_log_contains "${log_file}" "wrangler pages deploy"
-assert_log_contains "${log_file}" "--project-name customer-ltbase-controlplane-ui"
-assert_file_contains "${temp_dir}/site/ltbase-controlplane.config.json" '{"stacks":[]}'
+runtime_config='{"stacks":[{"key":"devo","redirectUri":"https://ui.example.com/auth/callback"}]}'
 
-if PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
-  --release-dir "${release_dir}" \
-  --manifest-path "${release_dir}/manifest.json" \
-  --pages-project customer-ltbase-controlplane-ui \
-  --cloudflare-account-id cf-account-123 \
-  --runtime-config-path "${temp_dir}/ltbase-controlplane.config.json" \
-  --artifact-name missing-ui >"${temp_dir}/missing.log" 2>&1; then
-  fail "expected missing UI artifact lookup to fail"
-fi
+run_expect_fail "manifest.json not found" "${temp_dir}/missing-manifest.log" \
+  env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+    --manifest-path "${temp_dir}/does-not-exist.json" \
+    --runtime-config-json "${runtime_config}" \
+    --cloudflare-pages-project "cp-ui"
 
-assert_log_contains "${temp_dir}/missing.log" "UI artifact manifest entry not found"
+cat >"${manifest_path}" <<'EOF'
+{"release_id":"v1.2.3","artifacts":[]}
+EOF
+run_expect_fail "control plane UI artifact entry not found in manifest" "${temp_dir}/missing-artifact.log" \
+  env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+    --manifest-path "${manifest_path}" \
+    --runtime-config-json "${runtime_config}" \
+    --cloudflare-pages-project "cp-ui"
 
-printf 'PASS: deploy controlplane ui tests\n'
+create_manifest "controlplane-ui.tar.gz"
+run_expect_fail "control plane UI artifact file not found" "${temp_dir}/missing-file.log" \
+  env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+    --manifest-path "${manifest_path}" \
+    --runtime-config-json "${runtime_config}" \
+    --cloudflare-pages-project "cp-ui"
+
+create_tarball "${temp_dir}/controlplane-ui.tar.gz"
+run_expect_fail "runtime config JSON must be an object with a stacks array" "${temp_dir}/invalid-json.log" \
+  env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+    --manifest-path "${manifest_path}" \
+    --runtime-config-json '{"stacks":"bad"}' \
+    --cloudflare-pages-project "cp-ui"
+
+create_tarball "${temp_dir}/controlplane-ui.tar.gz"
+
+: >"${log_file}"
+deploy_root="${temp_dir}/deploy-root"
+env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
+  --manifest-path "${manifest_path}" \
+  --runtime-config-json "${runtime_config}" \
+  --cloudflare-pages-project "cp-ui" \
+  --pages-branch "main" \
+  --deploy-root "${deploy_root}"
+
+assert_log_contains "${log_file}" "wrangler pages deploy ${deploy_root} --project-name cp-ui --branch main"
+assert_file_equals "${deploy_root}/ltbase-controlplane.config.json" "${runtime_config}"
+assert_file_contains "${ACTION_PATH}" "runtime-config-json"
+assert_file_contains "${ACTION_PATH}" "cloudflare-pages-project"
+assert_file_contains "${ACTION_PATH}" "pages-branch"
+
+printf 'PASS: deploy-controlplane-ui tests\n'
