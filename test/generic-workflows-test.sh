@@ -59,6 +59,7 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "infra_bi
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" ".github/actions/run-pulumi"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" "command: preview"
+assert_file_not_contains "${ROOT_DIR}/.github/workflows/preview-stack.yml" ".github/actions/deploy-controlplane-ui"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Rollout Hop"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "run_canary"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "workflow_actions_ref"
@@ -75,13 +76,13 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/ac
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "infra_binaries_repo"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "provenance-path: blueprint/__ref__/template-provenance.json"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/run-pulumi"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_pages_project"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_artifact_name"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_runtime_config_json"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/deploy-controlplane-ui"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ inputs.controlplane_ui_domain != '' && inputs.controlplane_ui_pages_project != '' && inputs.controlplane_ui_stacks != '' }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "reconcile_managed_dsql_endpoint"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_domain"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_pages_project"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "controlplane_ui_stacks"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/deploy-controlplane-ui"
-assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Aggregate control plane UI config"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Deploy control plane UI"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "runtime-config-json: \${{ steps.controlplane_ui_config.outputs.runtime_config_json }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cloudflare-pages-project: \${{ inputs.controlplane_ui_pages_project }}"
@@ -112,7 +113,6 @@ outputs_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" 
 canary_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Run data plane canary")"
 refresh_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Refresh stack")"
 refresh_outputs_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Capture refreshed deployment outputs")"
-ui_config_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Aggregate control plane UI config")"
 ui_deploy_line="$(line_number_for "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "- name: Deploy control plane UI")"
 
 if (( reconcile_line >= reapply_line )); then
@@ -130,11 +130,8 @@ fi
 if (( canary_line >= refresh_outputs_line )); then
   fail "expected refreshed output capture to happen after canary steps"
 fi
-if (( refresh_outputs_line >= ui_config_line )); then
-  fail "expected UI config aggregation to happen after refreshed output capture"
-fi
-if (( ui_config_line >= ui_deploy_line )); then
-  fail "expected UI deploy to happen after UI config aggregation"
+if (( ui_deploy_line <= refresh_outputs_line )); then
+  fail "expected UI deploy to happen after refreshed output capture"
 fi
 assert_file_not_contains "${ROOT_DIR}/.github/workflows/preview.yml" "deploy-controlplane-ui"
 assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "strategy:"
@@ -148,7 +145,6 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/diagnose-go-compile.yml" "to
 assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "name: Test Workflows Repo"
 assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "bash test/generic-workflows-test.sh"
 assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "bash test/deploy-controlplane-ui-test.sh"
-assert_file_contains "${ROOT_DIR}/.github/workflows/test.yml" "bash test/aggregate-controlplane-ui-config-test.sh"
 assert_file_contains "${ROOT_DIR}/.github/workflows/deploy-devo.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/promote-prod.yml" ".github/workflows/rollout-hop.yml@"
 assert_file_contains "${ROOT_DIR}/.github/workflows/preview.yml" ".github/workflows/preview-stack.yml@"

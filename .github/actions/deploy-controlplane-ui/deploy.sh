@@ -61,7 +61,7 @@ fi
 
 artifact_file="$(jq -r --arg artifact_name "${ARTIFACT_NAME}" '.artifacts[]? | select(.name == $artifact_name) | .file' "${MANIFEST_PATH}" | head -n 1)"
 
-if [[ -z "${artifact_file}" ]]; then
+if [[ -z "${artifact_file}" || "${artifact_file}" == "null" ]]; then
   echo "control plane UI artifact entry not found in manifest" >&2
   exit 1
 fi
@@ -89,11 +89,7 @@ fi
 
 tar -xzf "${artifact_path}" -C "${DEPLOY_ROOT}"
 
-pages_dir="${DEPLOY_ROOT}/dist"
-if [[ ! -d "${pages_dir}" ]]; then
-  echo "control plane UI artifact must be a tar.gz archive containing a top-level dist/ directory" >&2
-  exit 1
-fi
+pages_dir="${DEPLOY_ROOT}"
 
 printf '%s' "${RUNTIME_CONFIG_JSON}" > "${pages_dir}/ltbase-controlplane.config.json"
 

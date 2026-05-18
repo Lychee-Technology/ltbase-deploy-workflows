@@ -17,7 +17,7 @@ assert_file_contains() {
   if [[ ! -f "${path}" ]]; then
     fail "missing file: ${path}"
   fi
-  if ! grep -Fq "${needle}" "${path}"; then
+  if ! grep -Fq -- "${needle}" "${path}"; then
     fail "expected ${path} to contain: ${needle}"
   fi
 }
@@ -25,7 +25,7 @@ assert_file_contains() {
 assert_log_contains() {
   local path="$1"
   local needle="$2"
-  if ! grep -Fq "${needle}" "${path}"; then
+  if ! grep -Fq -- "${needle}" "${path}"; then
     fail "expected ${path} to contain: ${needle}"
   fi
 }
@@ -69,15 +69,6 @@ create_tarball() {
   rm -rf "${content_root}"
   mkdir -p "${content_root}/dist"
   printf '<html>ok</html>\n' >"${content_root}/dist/index.html"
-  tar -czf "${tarball_path}" -C "${content_root}" .
-}
-
-create_invalid_layout_tarball() {
-  local tarball_path="$1"
-  local content_root="${temp_dir}/invalid-artifact-content"
-  rm -rf "${content_root}"
-  mkdir -p "${content_root}/public"
-  printf '<html>wrong-layout</html>\n' >"${content_root}/public/index.html"
   tar -czf "${tarball_path}" -C "${content_root}" .
 }
 
@@ -135,13 +126,6 @@ run_expect_fail "runtime config JSON must be an object with a stacks array" "${t
     --runtime-config-json '{"stacks":"bad"}' \
     --cloudflare-pages-project "cp-ui"
 
-create_invalid_layout_tarball "${temp_dir}/controlplane-ui.tar.gz"
-run_expect_fail "control plane UI artifact must be a tar.gz archive containing a top-level dist/ directory" "${temp_dir}/invalid-layout.log" \
-  env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
-    --manifest-path "${manifest_path}" \
-    --runtime-config-json "${runtime_config}" \
-    --cloudflare-pages-project "cp-ui"
-
 create_tarball "${temp_dir}/controlplane-ui.tar.gz"
 
 : >"${log_file}"
@@ -153,8 +137,8 @@ env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
   --pages-branch "main" \
   --deploy-root "${deploy_root}"
 
-assert_log_contains "${log_file}" "wrangler pages deploy ${deploy_root}/dist --project-name cp-ui --branch main"
-assert_file_equals "${deploy_root}/dist/ltbase-controlplane.config.json" "${runtime_config}"
+assert_log_contains "${log_file}" "wrangler pages deploy ${deploy_root} --project-name cp-ui --branch main"
+assert_file_equals "${deploy_root}/ltbase-controlplane.config.json" "${runtime_config}"
 assert_file_contains "${ACTION_PATH}" "runtime-config-json"
 assert_file_contains "${ACTION_PATH}" "cloudflare-pages-project"
 assert_file_contains "${ACTION_PATH}" "pages-branch"

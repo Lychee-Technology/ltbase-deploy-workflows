@@ -25,6 +25,18 @@ on:
         type: string
         required: false
         default: Lychee-Technology/ltbase-releases
+      controlplane_ui_pages_project:
+        type: string
+        required: false
+        default: ""
+      controlplane_ui_runtime_config_json:
+        type: string
+        required: false
+        default: ""
+      controlplane_ui_artifact_name:
+        type: string
+        required: false
+        default: controlplane-ui
       working_directory:
         type: string
         required: false
@@ -54,15 +66,6 @@ on:
           calls aws dsql get-cluster to fetch the authoritative endpoint,
           and writes it back as pulumi config dsqlEndpoint before output
           capture and any CodeDeploy canary steps.
-      controlplane_ui_domain:
-        type: string
-        required: false
-      controlplane_ui_pages_project:
-        type: string
-        required: false
-      controlplane_ui_stacks:
-        type: string
-        required: false
     secrets:
       aws_role_arn:
         required: true
