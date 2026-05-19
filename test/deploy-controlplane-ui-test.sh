@@ -141,8 +141,10 @@ assert_log_contains "${log_file}" "wrangler pages deploy ${deploy_root} --projec
 assert_file_equals "${deploy_root}/ltbase-controlplane.config.json" "${runtime_config}"
 assert_file_contains "${ACTION_PATH}" "runtime_config_json"
 assert_file_contains "${ACTION_PATH}" "cloudflare_pages_project"
+assert_file_contains "${ACTION_PATH}" "cloudflare_account_id"
 assert_file_contains "${ACTION_PATH}" "pages_branch"
 assert_file_contains "${ACTION_PATH}" "INPUT_RUNTIME_CONFIG_JSON: \${{ inputs.runtime_config_json }}"
+assert_file_contains "${ACTION_PATH}" "INPUT_CLOUDFLARE_ACCOUNT_ID: \${{ inputs.cloudflare_account_id }}"
 assert_file_contains "${ACTION_PATH}" '--runtime-config-json "${INPUT_RUNTIME_CONFIG_JSON}"'
 
 printf 'PASS: deploy-controlplane-ui tests\n'
