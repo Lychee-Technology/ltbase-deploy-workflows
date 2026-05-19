@@ -2,25 +2,25 @@ name: Download Private Release
 description: Download official LTBase release assets from a private GitHub release
 
 inputs:
-  releases-repo:
+  releases_repo:
     description: Owner/repo holding private releases
     required: true
-  release-id:
+  release_id:
     description: Release tag / release_id to download
     required: true
   token:
     description: Fine-grained token that can read the private releases repo
     required: true
-  output-root:
+  output_root:
     description: Local root directory for downloaded releases
     required: false
     default: .ltbase/releases
 
 outputs:
-  release-dir:
+  release_dir:
     description: Downloaded release directory
     value: ${{ steps.download.outputs.release_dir }}
-  manifest-path:
+  manifest_path:
     description: Downloaded manifest path
     value: ${{ steps.download.outputs.manifest_path }}
 
@@ -34,17 +34,17 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
       run: |
         set -euo pipefail
-        release_dir="${{ inputs.output-root }}/${{ inputs.release-id }}"
+        release_dir="${{ inputs.output_root }}/${{ inputs.release_id }}"
         rm -rf "${release_dir}"
         mkdir -p "${release_dir}"
-        gh release download "${{ inputs.release-id }}" \
-          --repo "${{ inputs.releases-repo }}" \
+        gh release download "${{ inputs.release_id }}" \
+          --repo "${{ inputs.releases_repo }}" \
           --dir "${release_dir}" \
           --clobber
 
         manifest_path="${release_dir}/manifest.json"
         test -f "${manifest_path}"
-        jq -e --arg release_id "${{ inputs.release-id }}" '.release_id == $release_id' "${manifest_path}" >/dev/null
+        jq -e --arg release_id "${{ inputs.release_id }}" '.release_id == $release_id' "${manifest_path}" >/dev/null
 
         mapfile -t files < <(jq -r '.artifacts[].file' "${manifest_path}")
         for file in "${files[@]}"; do

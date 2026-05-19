@@ -2,24 +2,24 @@ name: Deploy Control Plane UI
 description: Deploy the control plane UI release artifact to Cloudflare Pages
 
 inputs:
-  manifest-path:
+  manifest_path:
     description: Path to the downloaded release manifest.json file
     required: true
-  runtime-config-json:
+  runtime_config_json:
     description: Runtime config JSON written into the deployed artifact
     required: true
-  cloudflare-pages-project:
+  cloudflare_pages_project:
     description: Cloudflare Pages project name
     required: true
-  pages-branch:
+  pages_branch:
     description: Optional Cloudflare Pages branch name
     required: false
     default: ""
-  artifact-name:
+  artifact_name:
     description: Manifest artifact name selector
     required: false
     default: controlplane-ui
-  deploy-root:
+  deploy_root:
     description: Optional unpack directory override
     required: false
     default: ""
@@ -29,11 +29,18 @@ runs:
   steps:
     - name: Deploy control plane UI artifact
       shell: bash
+      env:
+        INPUT_MANIFEST_PATH: ${{ inputs.manifest_path }}
+        INPUT_RUNTIME_CONFIG_JSON: ${{ inputs.runtime_config_json }}
+        INPUT_CLOUDFLARE_PAGES_PROJECT: ${{ inputs.cloudflare_pages_project }}
+        INPUT_PAGES_BRANCH: ${{ inputs.pages_branch }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        INPUT_DEPLOY_ROOT: ${{ inputs.deploy_root }}
       run: |
         "${{ github.action_path }}/deploy.sh" \
-          --manifest-path "${{ inputs.manifest-path }}" \
-          --runtime-config-json "${{ inputs.runtime-config-json }}" \
-          --cloudflare-pages-project "${{ inputs.cloudflare-pages-project }}" \
-          --pages-branch "${{ inputs.pages-branch }}" \
-          --artifact-name "${{ inputs.artifact-name }}" \
-          --deploy-root "${{ inputs.deploy-root }}"
+          --manifest-path "${INPUT_MANIFEST_PATH}" \
+          --runtime-config-json "${INPUT_RUNTIME_CONFIG_JSON}" \
+          --cloudflare-pages-project "${INPUT_CLOUDFLARE_PAGES_PROJECT}" \
+          --pages-branch "${INPUT_PAGES_BRANCH}" \
+          --artifact-name "${INPUT_ARTIFACT_NAME}" \
+          --deploy-root "${INPUT_DEPLOY_ROOT}"

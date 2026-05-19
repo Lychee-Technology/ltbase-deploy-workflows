@@ -2,24 +2,24 @@ name: Setup Pulumi
 description: Install Go and Pulumi, log into the backend, and select a stack
 
 inputs:
-  go-version-file:
+  go_version_file:
     description: Go version file path
     required: false
     default: infra/go.mod
-  cache-dependency-path:
+  cache_dependency_path:
     description: Go cache dependency path
     required: false
     default: infra/go.sum
-  pulumi-backend-url:
+  pulumi_backend_url:
     description: Pulumi backend URL
     required: true
-  pulumi-stack:
+  pulumi_stack:
     description: Stack name
     required: true
-  pulumi-secrets-provider:
+  pulumi_secrets_provider:
     description: Pulumi secrets provider URL
     required: true
-  working-directory:
+  working_directory:
     description: Pulumi project directory
     required: false
     default: infra
@@ -29,9 +29,9 @@ runs:
   steps:
     - uses: actions/setup-go@v6
       with:
-        go-version-file: ${{ inputs.go-version-file }}
+        go-version-file: ${{ inputs.go_version_file }}
         cache: true
-        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+        cache-dependency-path: ${{ inputs.cache_dependency_path }}
     - uses: pulumi/actions@v6
       with:
         pulumi-version: 3.230.0
@@ -39,7 +39,7 @@ runs:
       shell: bash
       run: |
         "${{ github.action_path }}/setup.sh" \
-          --pulumi-backend-url "${{ inputs.pulumi-backend-url }}" \
-          --pulumi-stack "${{ inputs.pulumi-stack }}" \
-          --pulumi-secrets-provider "${{ inputs.pulumi-secrets-provider }}" \
-          --working-directory "${{ inputs.working-directory }}"
+          --pulumi-backend-url "${{ inputs.pulumi_backend_url }}" \
+          --pulumi-stack "${{ inputs.pulumi_stack }}" \
+          --pulumi-secrets-provider "${{ inputs.pulumi_secrets_provider }}" \
+          --working-directory "${{ inputs.working_directory }}"

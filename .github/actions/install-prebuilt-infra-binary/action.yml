@@ -2,13 +2,13 @@ name: Install Prebuilt Infra Binary
 description: Install an upstream-template-bound prebuilt Pulumi infra binary from blueprint provenance when available
 
 inputs:
-  binaries-repo:
+  binaries_repo:
     description: Repository holding published prebuilt infra binary releases
     required: true
-  provenance-path:
+  provenance_path:
     description: Path to the checked-in template provenance file inside the checked-out blueprint
     required: true
-  working-directory:
+  working_directory:
     description: Pulumi project directory under the checked-out blueprint
     required: true
   token:
@@ -29,6 +29,6 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
       run: |
         "${{ github.action_path }}/install.sh" \
-          --binaries-repo "${{ inputs.binaries-repo }}" \
-          --provenance-path "${{ inputs.provenance-path }}" \
-          --working-directory "${{ inputs.working-directory }}"
+          --binaries-repo "${{ inputs.binaries_repo }}" \
+          --provenance-path "${{ inputs.provenance_path }}" \
+          --working-directory "${{ inputs.working_directory }}"

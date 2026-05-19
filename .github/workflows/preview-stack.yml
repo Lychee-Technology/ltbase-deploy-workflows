@@ -86,9 +86,9 @@ jobs:
         id: prebuilt
         uses: ./.ltbase/workflow-repo/.github/actions/install-prebuilt-infra-binary
         with:
-          binaries-repo: ${{ inputs.infra_binaries_repo }}
-          provenance-path: blueprint/__ref__/template-provenance.json
-          working-directory: blueprint/${{ inputs.working_directory }}
+          binaries_repo: ${{ inputs.infra_binaries_repo }}
+          provenance_path: blueprint/__ref__/template-provenance.json
+          working_directory: blueprint/${{ inputs.working_directory }}
           token: ${{ github.token }}
       - uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -97,18 +97,18 @@ jobs:
       - id: download
         uses: ./.ltbase/workflow-repo/.github/actions/download-private-release
         with:
-          releases-repo: ${{ inputs.releases_repo }}
-          release-id: ${{ inputs.release_id }}
+          releases_repo: ${{ inputs.releases_repo }}
+          release_id: ${{ inputs.release_id }}
           token: ${{ secrets.ltbase_releases_token }}
-          output-root: blueprint/.ltbase/releases
+          output_root: blueprint/.ltbase/releases
       - uses: ./.ltbase/workflow-repo/.github/actions/setup-pulumi
         with:
-          go-version-file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
-          cache-dependency-path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
-          pulumi-backend-url: ${{ inputs.pulumi_backend_url }}
-          pulumi-stack: ${{ inputs.pulumi_stack }}
-          pulumi-secrets-provider: ${{ inputs.pulumi_secrets_provider }}
-          working-directory: blueprint/${{ inputs.working_directory }}
+          go_version_file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
+          cache_dependency_path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
+          pulumi_backend_url: ${{ inputs.pulumi_backend_url }}
+          pulumi_stack: ${{ inputs.pulumi_stack }}
+          pulumi_secrets_provider: ${{ inputs.pulumi_secrets_provider }}
+          working_directory: blueprint/${{ inputs.working_directory }}
       - name: Set release id
         working-directory: blueprint/${{ inputs.working_directory }}
         run: |
@@ -130,11 +130,11 @@ jobs:
           GOMEMLIMIT: 3GiB
           GOGC: "50"
         with:
-          working-directory: blueprint/${{ inputs.working_directory }}
+          working_directory: blueprint/${{ inputs.working_directory }}
           command: preview
           stack: ${{ inputs.pulumi_stack }}
-          prefer-wrapper: true
-          wrapper-path: scripts/pulumi-wrapper.sh
+          prefer_wrapper: true
+          wrapper_path: scripts/pulumi-wrapper.sh
       - id: outputs
         run: |
           printf 'deployment_outputs_json=%s\n' '{}' >> "$GITHUB_OUTPUT"

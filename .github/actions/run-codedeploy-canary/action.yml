@@ -2,25 +2,25 @@ name: Run CodeDeploy Canary
 description: Shift a Lambda alias to the target version using CodeDeploy
 
 inputs:
-  outputs-json:
+  outputs_json:
     description: Path to Pulumi outputs json
     required: true
-  current-key:
+  current_key:
     description: JSON key for current alias version
     required: true
-  target-key:
+  target_key:
     description: JSON key for target function version
     required: true
-  function-key:
+  function_key:
     description: JSON key for function name
     required: true
-  alias-key:
+  alias_key:
     description: JSON key for alias name
     required: true
-  app-key:
+  app_key:
     description: JSON key for CodeDeploy app name
     required: true
-  group-key:
+  group_key:
     description: JSON key for CodeDeploy group name
     required: true
 
@@ -31,13 +31,13 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        outputs_json="${{ inputs.outputs-json }}"
-        current="$(jq -r ".${{ inputs.current-key }}" "${outputs_json}")"
-        target="$(jq -r ".${{ inputs.target-key }}" "${outputs_json}")"
-        function_name="$(jq -r ".${{ inputs.function-key }}" "${outputs_json}")"
-        alias_name="$(jq -r ".${{ inputs.alias-key }}" "${outputs_json}")"
-        app_name="$(jq -r ".${{ inputs.app-key }}" "${outputs_json}")"
-        group_name="$(jq -r ".${{ inputs.group-key }}" "${outputs_json}")"
+        outputs_json="${{ inputs.outputs_json }}"
+        current="$(jq -r ".${{ inputs.current_key }}" "${outputs_json}")"
+        target="$(jq -r ".${{ inputs.target_key }}" "${outputs_json}")"
+        function_name="$(jq -r ".${{ inputs.function_key }}" "${outputs_json}")"
+        alias_name="$(jq -r ".${{ inputs.alias_key }}" "${outputs_json}")"
+        app_name="$(jq -r ".${{ inputs.app_key }}" "${outputs_json}")"
+        group_name="$(jq -r ".${{ inputs.group_key }}" "${outputs_json}")"
 
         if [[ "${current}" == "${target}" ]]; then
           echo "no deployment needed for ${function_name}"

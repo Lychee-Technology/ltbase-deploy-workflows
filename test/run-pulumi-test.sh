@@ -78,7 +78,7 @@ PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
   --prefer-wrapper false
 
 assert_log_contains "${log_file}" "pulumi refresh --stack prod --yes --non-interactive"
-assert_file_contains "${ACTION_PATH}" "prefer-wrapper"
-assert_file_contains "${ACTION_PATH}" "wrapper-path"
+assert_file_contains "${ACTION_PATH}" "prefer_wrapper"
+assert_file_contains "${ACTION_PATH}" "wrapper_path"
 
 printf 'PASS: run-pulumi tests\n'
