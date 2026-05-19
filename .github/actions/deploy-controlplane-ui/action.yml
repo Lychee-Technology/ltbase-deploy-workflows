@@ -29,11 +29,18 @@ runs:
   steps:
     - name: Deploy control plane UI artifact
       shell: bash
+      env:
+        INPUT_MANIFEST_PATH: ${{ inputs.manifest-path }}
+        INPUT_RUNTIME_CONFIG_JSON: ${{ inputs.runtime-config-json }}
+        INPUT_CLOUDFLARE_PAGES_PROJECT: ${{ inputs.cloudflare-pages-project }}
+        INPUT_PAGES_BRANCH: ${{ inputs.pages-branch }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        INPUT_DEPLOY_ROOT: ${{ inputs.deploy-root }}
       run: |
         "${{ github.action_path }}/deploy.sh" \
-          --manifest-path "${{ inputs.manifest-path }}" \
-          --runtime-config-json "${{ inputs.runtime-config-json }}" \
-          --cloudflare-pages-project "${{ inputs.cloudflare-pages-project }}" \
-          --pages-branch "${{ inputs.pages-branch }}" \
-          --artifact-name "${{ inputs.artifact-name }}" \
-          --deploy-root "${{ inputs.deploy-root }}"
+          --manifest-path "${INPUT_MANIFEST_PATH}" \
+          --runtime-config-json "${INPUT_RUNTIME_CONFIG_JSON}" \
+          --cloudflare-pages-project "${INPUT_CLOUDFLARE_PAGES_PROJECT}" \
+          --pages-branch "${INPUT_PAGES_BRANCH}" \
+          --artifact-name "${INPUT_ARTIFACT_NAME}" \
+          --deploy-root "${INPUT_DEPLOY_ROOT}"

@@ -142,5 +142,7 @@ assert_file_equals "${deploy_root}/ltbase-controlplane.config.json" "${runtime_c
 assert_file_contains "${ACTION_PATH}" "runtime-config-json"
 assert_file_contains "${ACTION_PATH}" "cloudflare-pages-project"
 assert_file_contains "${ACTION_PATH}" "pages-branch"
+assert_file_contains "${ACTION_PATH}" "INPUT_RUNTIME_CONFIG_JSON: \${{ inputs.runtime-config-json }}"
+assert_file_contains "${ACTION_PATH}" '--runtime-config-json "${INPUT_RUNTIME_CONFIG_JSON}"'
 
 printf 'PASS: deploy-controlplane-ui tests\n'
