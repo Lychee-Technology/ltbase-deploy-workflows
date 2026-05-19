@@ -33,9 +33,9 @@ assert_file_not_contains() {
   fi
 }
 
-assert_file_contains "${ACTION_PATH}" "binaries-repo"
-assert_file_contains "${ACTION_PATH}" "provenance-path"
-assert_file_contains "${ACTION_PATH}" "working-directory"
+assert_file_contains "${ACTION_PATH}" "binaries_repo"
+assert_file_contains "${ACTION_PATH}" "provenance_path"
+assert_file_contains "${ACTION_PATH}" "working_directory"
 assert_file_contains "${ACTION_PATH}" "token"
 assert_file_not_contains "${ACTION_PATH}" "repository:"
 assert_file_not_contains "${ACTION_PATH}" "commit:"

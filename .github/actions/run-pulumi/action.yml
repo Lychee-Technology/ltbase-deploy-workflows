@@ -2,7 +2,7 @@ name: Run Pulumi
 description: Run preview, up, or refresh through one hardened execution path
 
 inputs:
-  working-directory:
+  working_directory:
     description: Pulumi project directory
     required: true
   command:
@@ -11,11 +11,11 @@ inputs:
   stack:
     description: Pulumi stack name
     required: true
-  prefer-wrapper:
+  prefer_wrapper:
     description: Whether to prefer a repo-local wrapper when present
     required: false
     default: "true"
-  wrapper-path:
+  wrapper_path:
     description: Absolute or working-directory-relative wrapper path
     required: false
     default: scripts/pulumi-wrapper.sh
@@ -27,8 +27,8 @@ runs:
       shell: bash
       run: |
         "${{ github.action_path }}/run.sh" \
-          --working-directory "${{ inputs.working-directory }}" \
+          --working-directory "${{ inputs.working_directory }}" \
           --command "${{ inputs.command }}" \
           --stack "${{ inputs.stack }}" \
-          --prefer-wrapper "${{ inputs.prefer-wrapper }}" \
-          --wrapper-path "${{ inputs.wrapper-path }}"
+          --prefer-wrapper "${{ inputs.prefer_wrapper }}" \
+          --wrapper-path "${{ inputs.wrapper_path }}"

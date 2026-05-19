@@ -23,8 +23,8 @@ assert_contains() {
 
 assert_contains "${ACTION_PATH}" "name: Reconcile Project Info"
 assert_contains "${ACTION_PATH}" "stack:"
-assert_contains "${ACTION_PATH}" "aws-region:"
-assert_contains "${ACTION_PATH}" "working-directory:"
+assert_contains "${ACTION_PATH}" "aws_region:"
+assert_contains "${ACTION_PATH}" "working_directory:"
 assert_contains "${ACTION_PATH}" "pulumi stack output projectId"
 assert_contains "${ACTION_PATH}" "pulumi stack output apiId"
 assert_contains "${ACTION_PATH}" "pulumi stack output apiBaseUrl"

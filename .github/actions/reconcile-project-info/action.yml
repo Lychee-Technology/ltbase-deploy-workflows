@@ -8,10 +8,10 @@ inputs:
   stack:
     description: Pulumi stack name
     required: true
-  aws-region:
+  aws_region:
     description: AWS region where the DynamoDB table lives
     required: true
-  working-directory:
+  working_directory:
     description: Pulumi project directory (blueprint-relative)
     required: false
     default: infra
@@ -21,7 +21,7 @@ runs:
   steps:
     - name: Reconcile project info
       shell: bash
-      working-directory: ${{ inputs.working-directory }}
+      working-directory: ${{ inputs.working_directory }}
       run: |
         set -euo pipefail
 
@@ -53,6 +53,6 @@ runs:
         aws dynamodb put-item \
           --table-name "${table_name}" \
           --item "${item}" \
-          --region "${{ inputs.aws-region }}"
+          --region "${{ inputs.aws_region }}"
 
         echo "project info reconciled for ${project_id}"

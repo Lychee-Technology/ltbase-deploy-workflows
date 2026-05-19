@@ -139,8 +139,10 @@ env PATH="${fake_bin}:$PATH" COMMAND_LOG="${log_file}" "${SCRIPT_PATH}" \
 
 assert_log_contains "${log_file}" "wrangler pages deploy ${deploy_root} --project-name cp-ui --branch main"
 assert_file_equals "${deploy_root}/ltbase-controlplane.config.json" "${runtime_config}"
-assert_file_contains "${ACTION_PATH}" "runtime-config-json"
-assert_file_contains "${ACTION_PATH}" "cloudflare-pages-project"
-assert_file_contains "${ACTION_PATH}" "pages-branch"
+assert_file_contains "${ACTION_PATH}" "runtime_config_json"
+assert_file_contains "${ACTION_PATH}" "cloudflare_pages_project"
+assert_file_contains "${ACTION_PATH}" "pages_branch"
+assert_file_contains "${ACTION_PATH}" "INPUT_RUNTIME_CONFIG_JSON: \${{ inputs.runtime_config_json }}"
+assert_file_contains "${ACTION_PATH}" '--runtime-config-json "${INPUT_RUNTIME_CONFIG_JSON}"'
 
 printf 'PASS: deploy-controlplane-ui tests\n'

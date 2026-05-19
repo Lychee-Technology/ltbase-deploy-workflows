@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     outputs:
       release_id: ${{ steps.meta.outputs.release_id }}
-      manifest_path: ${{ steps.download.outputs.manifest-path }}
+      manifest_path: ${{ steps.download.outputs.manifest_path }}
       pulumi_stack: ${{ steps.meta.outputs.pulumi_stack }}
       deployment_outputs_json: ${{ steps.outputs.outputs.deployment_outputs_json }}
     steps:
@@ -115,9 +115,9 @@ jobs:
         id: prebuilt
         uses: ./.ltbase/workflow-repo/.github/actions/install-prebuilt-infra-binary
         with:
-          binaries-repo: ${{ inputs.infra_binaries_repo }}
-          provenance-path: blueprint/__ref__/template-provenance.json
-          working-directory: blueprint/${{ inputs.working_directory }}
+          binaries_repo: ${{ inputs.infra_binaries_repo }}
+          provenance_path: blueprint/__ref__/template-provenance.json
+          working_directory: blueprint/${{ inputs.working_directory }}
           token: ${{ github.token }}
       - uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -126,18 +126,18 @@ jobs:
       - id: download
         uses: ./.ltbase/workflow-repo/.github/actions/download-private-release
         with:
-          releases-repo: ${{ inputs.releases_repo }}
-          release-id: ${{ inputs.release_id }}
+          releases_repo: ${{ inputs.releases_repo }}
+          release_id: ${{ inputs.release_id }}
           token: ${{ secrets.ltbase_releases_token }}
-          output-root: blueprint/.ltbase/releases
+          output_root: blueprint/.ltbase/releases
       - uses: ./.ltbase/workflow-repo/.github/actions/setup-pulumi
         with:
-          go-version-file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
-          cache-dependency-path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
-          pulumi-backend-url: ${{ inputs.pulumi_backend_url }}
-          pulumi-stack: ${{ inputs.pulumi_stack }}
-          pulumi-secrets-provider: ${{ inputs.pulumi_secrets_provider }}
-          working-directory: blueprint/${{ inputs.working_directory }}
+          go_version_file: ${{ format('blueprint/{0}/go.mod', inputs.working_directory) }}
+          cache_dependency_path: ${{ format('blueprint/{0}/go.sum', inputs.working_directory) }}
+          pulumi_backend_url: ${{ inputs.pulumi_backend_url }}
+          pulumi_stack: ${{ inputs.pulumi_stack }}
+          pulumi_secrets_provider: ${{ inputs.pulumi_secrets_provider }}
+          working_directory: blueprint/${{ inputs.working_directory }}
       - name: Set release id
         working-directory: blueprint/${{ inputs.working_directory }}
         run: |
@@ -159,18 +159,18 @@ jobs:
           GOMEMLIMIT: 3GiB
           GOGC: "50"
         with:
-          working-directory: blueprint/${{ inputs.working_directory }}
+          working_directory: blueprint/${{ inputs.working_directory }}
           command: up
           stack: ${{ inputs.pulumi_stack }}
-          prefer-wrapper: true
-          wrapper-path: scripts/pulumi-wrapper.sh
+          prefer_wrapper: true
+          wrapper_path: scripts/pulumi-wrapper.sh
       - name: Reconcile managed DSQL endpoint
         if: ${{ inputs.reconcile_managed_dsql_endpoint }}
         uses: ./.ltbase/workflow-repo/.github/actions/reconcile-managed-dsql-endpoint
         with:
           stack: ${{ inputs.pulumi_stack }}
-          aws-region: ${{ inputs.aws_region }}
-          working-directory: blueprint/${{ inputs.working_directory }}
+          aws_region: ${{ inputs.aws_region }}
+          working_directory: blueprint/${{ inputs.working_directory }}
       - name: Re-apply stack after managed DSQL reconcile
         if: ${{ inputs.reconcile_managed_dsql_endpoint }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
@@ -180,17 +180,17 @@ jobs:
           GOMEMLIMIT: 3GiB
           GOGC: "50"
         with:
-          working-directory: blueprint/${{ inputs.working_directory }}
+          working_directory: blueprint/${{ inputs.working_directory }}
           command: up
           stack: ${{ inputs.pulumi_stack }}
-          prefer-wrapper: true
-          wrapper-path: scripts/pulumi-wrapper.sh
+          prefer_wrapper: true
+          wrapper_path: scripts/pulumi-wrapper.sh
       - name: Reconcile project info
         uses: ./.ltbase/workflow-repo/.github/actions/reconcile-project-info
         with:
           stack: ${{ inputs.pulumi_stack }}
-          aws-region: ${{ inputs.aws_region }}
-          working-directory: blueprint/${{ inputs.working_directory }}
+          aws_region: ${{ inputs.aws_region }}
+          working_directory: blueprint/${{ inputs.working_directory }}
       - name: Capture deployment outputs
         working-directory: blueprint/${{ inputs.working_directory }}
         run: pulumi stack output --json --stack "${{ inputs.pulumi_stack }}" > /tmp/deployment-outputs.json
@@ -198,35 +198,35 @@ jobs:
         if: ${{ inputs.run_canary }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-codedeploy-canary
         with:
-          outputs-json: /tmp/deployment-outputs.json
-          current-key: dataPlaneCurrentVersion
-          target-key: dataPlaneTargetVersion
-          function-key: dataPlaneFunctionName
-          alias-key: dataPlaneAliasName
-          app-key: dataPlaneDeploymentAppName
-          group-key: dataPlaneDeploymentGroupName
+          outputs_json: /tmp/deployment-outputs.json
+          current_key: dataPlaneCurrentVersion
+          target_key: dataPlaneTargetVersion
+          function_key: dataPlaneFunctionName
+          alias_key: dataPlaneAliasName
+          app_key: dataPlaneDeploymentAppName
+          group_key: dataPlaneDeploymentGroupName
       - name: Run control plane canary
         if: ${{ inputs.run_canary }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-codedeploy-canary
         with:
-          outputs-json: /tmp/deployment-outputs.json
-          current-key: controlPlaneCurrentVersion
-          target-key: controlPlaneTargetVersion
-          function-key: controlPlaneFunctionName
-          alias-key: controlPlaneAliasName
-          app-key: controlPlaneDeploymentAppName
-          group-key: controlPlaneDeploymentGroupName
+          outputs_json: /tmp/deployment-outputs.json
+          current_key: controlPlaneCurrentVersion
+          target_key: controlPlaneTargetVersion
+          function_key: controlPlaneFunctionName
+          alias_key: controlPlaneAliasName
+          app_key: controlPlaneDeploymentAppName
+          group_key: controlPlaneDeploymentGroupName
       - name: Run auth service canary
         if: ${{ inputs.run_canary }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-codedeploy-canary
         with:
-          outputs-json: /tmp/deployment-outputs.json
-          current-key: authServiceCurrentVersion
-          target-key: authServiceTargetVersion
-          function-key: authServiceFunctionName
-          alias-key: authServiceAliasName
-          app-key: authServiceDeploymentAppName
-          group-key: authServiceDeploymentGroupName
+          outputs_json: /tmp/deployment-outputs.json
+          current_key: authServiceCurrentVersion
+          target_key: authServiceTargetVersion
+          function_key: authServiceFunctionName
+          alias_key: authServiceAliasName
+          app_key: authServiceDeploymentAppName
+          group_key: authServiceDeploymentGroupName
       - name: Refresh stack
         if: ${{ inputs.refresh_after_apply }}
         uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
@@ -236,11 +236,11 @@ jobs:
           GOMEMLIMIT: 3GiB
           GOGC: "50"
         with:
-          working-directory: blueprint/${{ inputs.working_directory }}
+          working_directory: blueprint/${{ inputs.working_directory }}
           command: refresh
           stack: ${{ inputs.pulumi_stack }}
-          prefer-wrapper: true
-          wrapper-path: scripts/pulumi-wrapper.sh
+          prefer_wrapper: true
+          wrapper_path: scripts/pulumi-wrapper.sh
       - name: Capture refreshed deployment outputs
         if: ${{ inputs.refresh_after_apply }}
         working-directory: blueprint/${{ inputs.working_directory }}
@@ -251,9 +251,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
         with:
-          manifest-path: ${{ steps.download.outputs.manifest-path }}
-          runtime-config-json: ${{ inputs.controlplane_ui_runtime_config_json }}
-          cloudflare-pages-project: ${{ inputs.controlplane_ui_pages_project }}
+          manifest_path: ${{ steps.download.outputs.manifest_path }}
+          runtime_config_json: ${{ inputs.controlplane_ui_runtime_config_json }}
+          cloudflare_pages_project: ${{ inputs.controlplane_ui_pages_project }}
       - id: outputs
         run: |
           echo "deployment_outputs_json=$(jq -c '.' /tmp/deployment-outputs.json)" >> "$GITHUB_OUTPUT"
