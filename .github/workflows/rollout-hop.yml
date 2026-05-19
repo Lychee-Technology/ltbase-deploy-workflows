@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     outputs:
       release_id: ${{ steps.meta.outputs.release_id }}
-      manifest_path: ${{ steps.download.outputs.manifest_path }}
+      manifest_path: ${{ steps.download.outputs.manifest-path }}
       pulumi_stack: ${{ steps.meta.outputs.pulumi_stack }}
       deployment_outputs_json: ${{ steps.outputs.outputs.deployment_outputs_json }}
     steps:
@@ -251,7 +251,7 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
         with:
-          manifest-path: ${{ steps.download.outputs.manifest_path }}
+          manifest-path: ${{ steps.download.outputs.manifest-path }}
           runtime-config-json: ${{ inputs.controlplane_ui_runtime_config_json }}
           cloudflare-pages-project: ${{ inputs.controlplane_ui_pages_project }}
       - id: outputs

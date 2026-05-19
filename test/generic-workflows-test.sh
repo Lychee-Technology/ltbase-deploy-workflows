@@ -85,6 +85,7 @@ assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "if: \${{ i
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" ".github/actions/reconcile-project-info"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "reconcile_managed_dsql_endpoint"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Deploy control plane UI"
+assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "manifest-path: \${{ steps.download.outputs.manifest-path }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "runtime-config-json: \${{ inputs.controlplane_ui_runtime_config_json }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "cloudflare-pages-project: \${{ inputs.controlplane_ui_pages_project }}"
 assert_file_contains "${ROOT_DIR}/.github/workflows/rollout-hop.yml" "name: Re-apply stack after managed DSQL reconcile"
