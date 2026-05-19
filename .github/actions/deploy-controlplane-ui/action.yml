@@ -11,6 +11,10 @@ inputs:
   cloudflare_pages_project:
     description: Cloudflare Pages project name
     required: true
+  cloudflare_account_id:
+    description: Optional Cloudflare account id used by Wrangler account resolution
+    required: false
+    default: ""
   pages_branch:
     description: Optional Cloudflare Pages branch name
     required: false
@@ -33,9 +37,11 @@ runs:
         INPUT_MANIFEST_PATH: ${{ inputs.manifest_path }}
         INPUT_RUNTIME_CONFIG_JSON: ${{ inputs.runtime_config_json }}
         INPUT_CLOUDFLARE_PAGES_PROJECT: ${{ inputs.cloudflare_pages_project }}
+        INPUT_CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare_account_id }}
         INPUT_PAGES_BRANCH: ${{ inputs.pages_branch }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
         INPUT_DEPLOY_ROOT: ${{ inputs.deploy_root }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare_account_id }}
       run: |
         "${{ github.action_path }}/deploy.sh" \
           --manifest-path "${INPUT_MANIFEST_PATH}" \

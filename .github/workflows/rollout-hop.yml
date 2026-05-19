@@ -29,6 +29,10 @@ on:
         type: string
         required: false
         default: ""
+      cloudflare_account_id:
+        type: string
+        required: false
+        default: ""
       controlplane_ui_runtime_config_json:
         type: string
         required: false
@@ -254,6 +258,7 @@ jobs:
           manifest_path: ${{ steps.download.outputs.manifest_path }}
           runtime_config_json: ${{ inputs.controlplane_ui_runtime_config_json }}
           cloudflare_pages_project: ${{ inputs.controlplane_ui_pages_project }}
+          cloudflare_account_id: ${{ inputs.cloudflare_account_id }}
       - id: outputs
         run: |
           echo "deployment_outputs_json=$(jq -c '.' /tmp/deployment-outputs.json)" >> "$GITHUB_OUTPUT"
