@@ -6,7 +6,7 @@ on:
 
 jobs:
   shell-tests:
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v6
       - name: Run workflow structure tests
