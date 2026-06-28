@@ -168,6 +168,27 @@ jobs:
           stack: ${{ inputs.pulumi_stack }}
           prefer_wrapper: true
           wrapper_path: scripts/pulumi-wrapper.sh
+      - name: Clean up orphaned API Gateway routes
+        shell: bash
+        working-directory: blueprint/${{ inputs.working_directory }}
+        run: |
+          PROJECT="$(grep -m1 '^name:' Pulumi.yaml | sed 's/^name:[[:space:]]*//')"
+          PREFIX="${PROJECT}-${{ inputs.pulumi_stack }}"
+          echo "Cleaning orphaned routes for prefix: ${PREFIX}"
+          for API_ID in $(aws apigatewayv2 get-apis --query "Items[?ProtocolType=='HTTP'].ApiId" --output text 2>/dev/null); do
+            NAME="$(aws apigatewayv2 get-api --api-id "$API_ID" --query "Name" --output text 2>/dev/null || true)"
+            if [[ -z "${NAME}" || "${NAME}" != ${PREFIX}-* ]]; then
+              continue
+            fi
+            for KEY in "OPTIONS /{proxy+}" "OPTIONS /"; do
+              ROUTE_ID="$(aws apigatewayv2 get-routes --api-id "$API_ID" --query "Items[?RouteKey=='${KEY}'].RouteId" --output text 2>/dev/null || true)"
+              if [[ -n "${ROUTE_ID}" && "${ROUTE_ID}" != "None" ]]; then
+                echo "Deleting orphaned route: ${NAME} -> ${KEY} (${ROUTE_ID})"
+                aws apigatewayv2 delete-route --api-id "$API_ID" --route-id "$ROUTE_ID"
+              fi
+            done
+          done
+          echo "Orphaned route cleanup complete"
       - name: Deploy stack
         uses: ./.ltbase/workflow-repo/.github/actions/run-pulumi
         env:
